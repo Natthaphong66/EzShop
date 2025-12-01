@@ -1,0 +1,12 @@
+{% extends "accounts/base_accounts.html" %}
+
+{% block account_content %}
+    <h2>ข้อมูลส่วนตัว</h2>
+    <p>จัดการข้อมูลส่วนตัวเพื่อความปลอดภัยของบัญชีผู้ใช้</p>
+    <hr>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">บันทึกการเปลี่ยนแปลง</button>
+    </form>
+{% endblock %}

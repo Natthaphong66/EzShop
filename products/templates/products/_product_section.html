@@ -1,0 +1,28 @@
+{% if products %}
+  <section class="mb-12">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-slate-900">{{ title }}</h2>
+      <a href="{% url 'products:product_list' %}" class="text-blue-600 hover:text-blue-700 font-medium">ดูทั้งหมด →</a>
+    </div>
+    <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 list-none p-0 m-0">
+      {% for product in products %}
+        <li class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
+          <a href="{% url 'products:product_detail' product.pk %}" class="block no-underline text-inherit">
+            <div class="relative overflow-hidden bg-slate-100 h-48">
+              {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center text-slate-400 text-sm">ไม่มีรูป</div>
+              {% endif %}
+            </div>
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-slate-900 mb-2 line-clamp-2">{{ product.name }}</h3>
+              <p class="text-xl font-bold text-black mb-1">{{ product.price }} ฿</p>
+              <p class="text-sm text-slate-500">หมวดหมู่: {{ product.category|default:"-" }}</p>
+            </div>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}

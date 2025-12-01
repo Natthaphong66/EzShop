@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900">ลงขายสินค้า</h1>
+        <p class="text-slate-500 mt-2">เลือกรูปแบบการขายที่คุณต้องการ</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-slate-200 mb-8">
+        <a href="{% url 'products:product_create' %}"
+            class="px-6 py-3 text-slate-500 font-medium hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent transition-colors">
+            ขายสินค้าปกติ
+        </a>
+        <a href="#" class="px-6 py-3 text-red-600 font-medium border-b-2 border-red-600 transition-colors">
+            ประมูลสินค้า
+        </a>
+    </div>
+
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Error Messages -->
+        {% if form.errors or product_form.errors %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 class="text-red-800 font-semibold mb-2">กรุณาแก้ไขข้อผิดพลาดต่อไปนี้:</h3>
+            <ul class="list-disc list-inside text-red-700 text-sm space-y-1">
+                {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+                {% endfor %}
+                {% for field, errors in product_form.errors.items %}
+                {% for error in errors %}
+                <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Product Information Section -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-6 h-6 text-slate-400">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+                ข้อมูลสินค้า
+            </h2>
+
+            <div class="space-y-6">
+                <!-- Image Upload (Alpine.js) -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">รูปภาพสินค้า</label>
+                    <div class="relative" x-data="{ 
+                        previews: [
+                            {% if product_form.instance.image %}
+                            { url: '{{ product_form.instance.image.url }}', id: 'main', isMain: true },
+                            {% endif %}
+                            {% for img in product_form.instance.images.all %}
+                            { url: '{{ img.image.url }}', id: '{{ img.id }}', isMain: false },
+                            {% endfor %}
+                        ],
+                        files: [],
+                        deletedImageIds: [],
+                        
+                        handleFileSelect(event) {
+                            const newFiles = Array.from(event.target.files);
+                            if (this.previews.length + newFiles.length > 5) {
+                                alert('อัปโหลดได้สูงสุด 5 รูป');
+                                this.updateInput();
+                                return;
+                            }
+                            this.files = this.files.concat(newFiles);
+                            newFiles.forEach(file => {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    this.previews.push({ url: e.target.result, file: file });
+                                };
+                                reader.readAsDataURL(file);
+                            });
+                            this.updateInput();
+                        },
+                        
+                        removeImage(index) {
+                            const item = this.previews[index];
+                            if (item.id) {
+                                this.deletedImageIds.push(item.id);
+                            } else {
+                                if (item.file) {
+                                    const fileIndex = this.files.indexOf(item.file);
+                                    if (fileIndex > -1) this.files.splice(fileIndex, 1);
+                                }
+                            }
+                            this.previews.splice(index, 1);
+                            this.updateInput();
+                        },
+                        
+                        updateInput() {
+                            const dt = new DataTransfer();
+                            this.files.forEach(f => dt.items.add(f));
+                            document.getElementById('id_images').files = dt.files;
+                            document.getElementById('id_deleted_images').value = this.deletedImageIds.join(',');
+                        }
+                     }">
+
+                        <input type="hidden" name="deleted_image_ids" id="id_deleted_images">
+
+                        <div class="border-2 border-slate-200 border-dashed rounded-xl p-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                <template x-for="(preview, index) in previews" :key="index">
+                                    <div
+                                        class="bg-white border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow relative group">
+                                        <div class="h-48 relative bg-slate-100">
+                                            <img :src="preview.url" class="w-full h-full object-cover">
+                                            <button type="button" @click="removeImage(index)"
+                                                class="absolute top-2 right-2 bg-white/90 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-full p-1.5 shadow-sm transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                                                title="ลบรูปภาพ">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <label x-show="previews.length < 5"
+                                    class="h-48 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
+                                    <div
+                                        class="bg-white p-3 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                            </path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="text-sm text-slate-500 font-medium">เพิ่มรูปภาพ</span>
+                                    <span class="text-xs text-slate-400 mt-1"
+                                        x-text="`ได้อีก ${5 - previews.length} รูป`"></span>
+                                    <input type="file" name="images" accept="image/*" id="id_images" class="hidden"
+                                        multiple @change="handleFileSelect($event)">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    {% if product_form.images.errors %}
+                    <p class="text-red-600 text-sm mt-2">{{ product_form.images.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อสินค้า</label>
+                    {{ product_form.name }}
+                    {% if product_form.name.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ product_form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่</label>
+                        {{ product_form.category }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">สภาพสินค้า</label>
+                        <div class="flex gap-4 mt-2">
+                            {% for radio in product_form.condition %}
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                {{ radio.tag }}
+                                <span class="text-slate-700">{{ radio.choice_label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">รายละเอียด</label>
+                    {{ product_form.description }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Auction Settings Section -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-xl font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="w-6 h-6 text-slate-400">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ตั้งค่าการประมูล
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.starting_price.label }}</label>
+                    {{ form.starting_price }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.min_increment.label }}</label>
+                    {{ form.min_increment }}
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.reserve_price.label }}</label>
+                {{ form.reserve_price }}
+                <p class="text-xs text-slate-500 mt-1">หากจบประมูลแล้วราคาสูงสุดไม่ถึงราคานี้ สินค้าจะไม่ถูกขาย</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.start_at.label }}</label>
+                    {{ form.start_at }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.end_at.label }}</label>
+                    {{ form.end_at }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'home' %}"
+                class="px-6 py-3 rounded-lg text-slate-600 font-medium hover:bg-slate-100 transition-colors">
+                ยกเลิก
+            </a>
+            <button type="submit"
+                class="px-8 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-lg shadow-red-200 transition-all transform hover:-translate-y-0.5">
+                ลงประมูลสินค้า
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

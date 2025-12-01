@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="max-w-md mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <h1 class="text-3xl font-bold text-slate-900 mb-4">ลบสินค้า</h1>
+      <p class="text-slate-600 mb-8">
+        คุณต้องการลบ <span class="font-semibold text-slate-900">"{{ object.name }}"</span> หรือไม่?
+      </p>
+      <p class="text-sm text-red-600 mb-6 bg-red-50 p-3 rounded-lg">
+        ⚠️ การลบนี้ไม่สามารถยกเลิกได้
+      </p>
+      
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <button type="submit" class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors">
+          ยืนยันลบ
+        </button>
+        <a href="{% url 'products:product_detail' object.pk %}" class="block w-full px-4 py-3 bg-slate-200 text-slate-900 rounded-lg font-semibold hover:bg-slate-300 transition-colors text-center">
+          ยกเลิก
+        </a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

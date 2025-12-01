@@ -1,0 +1,47 @@
+{% extends "accounts/base_accounts.html" %}
+
+{% block account_content %}
+<div class="bg-white rounded-lg shadow-sm border border-red-200 p-8">
+    <div class="mb-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">ลบบัญชีผู้ใช้</h2>
+                <p class="text-slate-600">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6">
+        <p class="text-sm text-red-700">
+            <strong>คำเตือน:</strong> เมื่อคุณลบบัญชีแล้ว ข้อมูลทั้งหมดของคุณจะถูกลบถาวรและไม่สามารถกู้คืนได้ รวมถึง:
+        </p>
+        <ul class="list-disc list-inside mt-2 text-sm text-red-700 space-y-1">
+            <li>ข้อมูลโปรไฟล์</li>
+            <li>ประกาศสินค้าทั้งหมด</li>
+            <li>ประวัติการซื้อขาย</li>
+            <li>รีวิวและคะแนน</li>
+        </ul>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="flex items-center gap-4 pt-4">
+            <button type="submit" 
+                    class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                    onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชี? การกระทำนี้ไม่สามารถย้อนกลับได้')">
+                ยืนยันการลบบัญชี
+            </button>
+            <a href="{% url 'accounts:profile' %}" 
+               class="px-6 py-2.5 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-slate-700">
+                ยกเลิก
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
