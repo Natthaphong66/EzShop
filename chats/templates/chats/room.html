@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="chatRoom()" x-init="init()">
+    <!-- Chat Header -->
+    <div class="bg-white rounded-t-2xl shadow-sm border border-slate-200 border-b-0 p-4">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'chats:room_list' %}" class="p-2 -ml-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+
+            <!-- Other User Info -->
+            {% if other_user %}
+            <div class="flex items-center gap-3 flex-1">
+                {% if other_user.profile_picture %}
+                <img src="{{ other_user.profile_picture.url }}"
+                    class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                    alt="{{ other_user.get_full_name_display }}">
+                {% else %}
+                <div
+                    class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                    {{ other_user.get_full_name_display|first|upper }}
+                </div>
+                {% endif %}
+                <div>
+                    <h2 class="font-semibold text-slate-800">{{ other_user.get_full_name_display }}</h2>
+                    {% if room.product %}
+                    <a href="{% url 'products:product_detail' pk=room.product.id %}"
+                        class="text-sm text-blue-600 hover:underline">
+                        {{ room.product.name|truncatechars:40 }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="messages-container" class="bg-slate-50 border-x border-slate-200 h-[60vh] overflow-y-auto p-4 space-y-4"
+        x-ref="messagesContainer">
+
+        {% for message in chat_messages %}
+        <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+            <div class="max-w-[75%] {% if message.sender == request.user %}order-2{% endif %}">
+                {% if message.sender != request.user %}
+                <div class="flex items-center gap-2 mb-1">
+                    {% if message.sender.profile_picture %}
+                    <img src="{{ message.sender.profile_picture.url }}" class="w-6 h-6 rounded-full object-cover"
+                        alt="">
+                    {% else %}
+                    <div
+                        class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
+                        {{ message.sender.get_full_name_display|first|upper }}
+                    </div>
+                    {% endif %}
+                    <span class="text-xs text-slate-500">{{ message.sender.get_full_name_display }}</span>
+                </div>
+                {% endif %}
+
+                <div
+                    class="{% if message.sender == request.user %}bg-gradient-to-r from-red-500 to-red-600 text-white{% else %}bg-white border border-slate-200{% endif %} px-4 py-2.5 rounded-2xl {% if message.sender == request.user %}rounded-br-md{% else %}rounded-bl-md{% endif %} shadow-sm">
+                    <p class="text-sm whitespace-pre-wrap break-words">{{ message.content }}</p>
+                </div>
+                <p class="text-xs text-slate-400 mt-1 {% if message.sender == request.user %}text-right{% endif %}">
+                    {{ message.created_at|time:"H:i" }}
+                </p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="flex items-center justify-center h-full">
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto mb-3 bg-slate-200 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z">
+                        </path>
+                    </svg>
+                </div>
+                <p class="text-slate-500">เริ่มการสนทนา</p>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- New messages will be appended here -->
+        <template x-for="msg in newMessages" :key="msg.id">
+            <div class="flex" :class="msg.is_mine ? 'justify-end' : 'justify-start'">
+                <div class="max-w-[75%]">
+                    <div :class="msg.is_mine ? 'bg-gradient-to-r from-red-500 to-red-600 text-white rounded-br-md' : 'bg-white border border-slate-200 rounded-bl-md'"
+                        class="px-4 py-2.5 rounded-2xl shadow-sm">
+                        <p class="text-sm whitespace-pre-wrap break-words" x-text="msg.content"></p>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1" :class="msg.is_mine ? 'text-right' : ''"
+                        x-text="formatTime(msg.created_at)"></p>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Message Input -->
+    <div class="bg-white rounded-b-2xl shadow-sm border border-slate-200 border-t-0 p-4">
+        <form @submit.prevent="sendMessage()" class="flex items-end gap-3">
+            <div class="flex-1">
+                <textarea x-model="messageInput" x-ref="messageInput"
+                    @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()" placeholder="พิมพ์ข้อความ..." rows="1"
+                    class="w-full px-4 py-3 bg-slate-100 border-0 rounded-xl resize-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                    :disabled="sending"></textarea>
+            </div>
+            <button type="submit" :disabled="!messageInput.trim() || sending"
+                class="flex-shrink-0 p-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function chatRoom() {
+        return {
+            messageInput: '',
+            sending: false,
+            newMessages: [],
+            lastMessageId: null,
+            pollInterval: null,
+            roomId: '{{ room.id }}',
+
+            init() {
+                this.scrollToBottom();
+                // Start polling for new messages every 3 seconds
+                this.pollInterval = setInterval(() => this.fetchNewMessages(), 3000);
+            },
+
+            scrollToBottom() {
+                this.$nextTick(() => {
+                    const container = this.$refs.messagesContainer;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                });
+            },
+
+            formatTime(isoString) {
+                const date = new Date(isoString);
+                return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            },
+
+            async sendMessage() {
+                if (!this.messageInput.trim() || this.sending) return;
+
+                this.sending = true;
+                const content = this.messageInput;
+                this.messageInput = '';
+
+                try {
+                    const response = await fetch(`/chats/api/room/${this.roomId}/send/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCsrfToken()
+                        },
+                        body: JSON.stringify({ content })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.newMessages.push(data.message);
+                        this.lastMessageId = data.message.id;
+                        this.scrollToBottom();
+                    }
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    this.messageInput = content; // Restore message on error
+                } finally {
+                    this.sending = false;
+                    this.$refs.messageInput.focus();
+                }
+            },
+
+            async fetchNewMessages() {
+                try {
+                    let url = `/chats/api/room/${this.roomId}/messages/`;
+                    if (this.lastMessageId) {
+                        url += `?after=${this.lastMessageId}`;
+                    }
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.messages && data.messages.length > 0) {
+                        // Filter out messages we already have
+                        const existingIds = new Set(this.newMessages.map(m => m.id));
+                        const newOnes = data.messages.filter(m => !existingIds.has(m.id) && !m.is_mine);
+
+                        if (newOnes.length > 0) {
+                            this.newMessages.push(...newOnes);
+                            this.lastMessageId = newOnes[newOnes.length - 1].id;
+                            this.scrollToBottom();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching messages:', error);
+                }
+            },
+
+            getCsrfToken() {
+                const name = 'csrftoken';
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        }
+    }
+</script>
+{% endblock %}

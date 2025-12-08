@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        .header {
+            background-color: #dc2626;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .price {
+            font-size: 24px;
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 ยินดีด้วย! คุณชนะการประมูล</h1>
+        </div>
+        <div class="content">
+            <p>เรียนคุณ <strong>{{ user.first_name }} {{ user.last_name }}</strong>,</p>
+
+            <p>เรามีความยินดีที่จะแจ้งให้ทราบว่า คุณเป็นผู้ชนะการประมูลสินค้าชิ้นนี้:</p>
+
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h3 style="margin-top: 0;">{{ auction.product.name }}</h3>
+                <p>ราคาจบประมูล: <span class="price">฿ {{ auction.final_price }}</span></p>
+                <p>วันที่จบ: {{ auction.ended_at|date:"d M Y, H:i" }}</p>
+            </div>
+
+            <p>กรุณาติดต่อผู้ขายเพื่อดำเนินการชำระเงินและจัดส่งสินค้าต่อไป</p>
+
+            <center>
+                <a href="http://127.0.0.1:8000{% url 'auctions:auction_detail' auction.pk %}"
+                    class="button">ดูรายละเอียดการประมูล</a>
+            </center>
+        </div>
+        <div class="footer">
+            <p>ขอบคุณที่ใช้บริการ EzShop</p>
+            <p>อีเมลนี้เป็นการแจ้งเตือนอัตโนมัติ กรุณาอย่าตอบกลับ</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -2,6 +2,9 @@ import uuid
 from django.db import models
 from django.conf import settings
 from products.models import Product
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 class Auction(models.Model):
     class Status(models.TextChoices):
@@ -60,6 +63,32 @@ class Auction(models.Model):
         if highest_bid:
             self.winner_bid = highest_bid
             self.final_price = highest_bid.amount
+            
+            # Send email to winner
+            try:
+                subject = render_to_string('auctions/emails/winner_notification_subject.txt', {'auction': self})
+                # Force single line subject to avoid HeaderParseError
+                subject = ''.join(subject.splitlines())
+                
+                html_content = render_to_string('auctions/emails/winner_notification_body.html', {
+                    'auction': self,
+                    'user': highest_bid.bidder
+                })
+                text_content = render_to_string('auctions/emails/winner_notification_body.txt', {
+                    'auction': self,
+                    'user': highest_bid.bidder
+                })
+                
+                msg = EmailMultiAlternatives(
+                    subject,
+                    text_content,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [highest_bid.bidder.email]
+                )
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+            except Exception as e:
+                print(f"Failed to send winner email: {e}")
         
         self.save()
 

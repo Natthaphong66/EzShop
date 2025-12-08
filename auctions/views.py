@@ -17,12 +17,24 @@ class AuctionListView(ListView):
     context_object_name = 'auctions'
     
     def get_queryset(self):
-        return Auction.objects.filter(status=Auction.Status.LIVE).order_by('-created_at')
+        from django.utils import timezone
+        return Auction.objects.filter(
+            status=Auction.Status.LIVE,
+            end_at__gt=timezone.now()
+        ).order_by('-created_at')
 
 class AuctionDetailView(DetailView):
     model = Auction
     template_name = 'auctions/auction_detail.html'
     context_object_name = 'auction'
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        # Auto-close if expired but still marked as LIVE
+        from django.utils import timezone
+        if obj.status == Auction.Status.LIVE and obj.end_at <= timezone.now():
+            obj.close_auction()
+        return obj
 
 class AuctionCreateView(LoginRequiredMixin, CreateView):
     template_name = 'auctions/auction_form.html'
@@ -103,8 +115,12 @@ class PlaceBidView(LoginRequiredMixin, View):
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Validation 2: Check auction status is LIVE
-        if auction.status != Auction.Status.LIVE:
-            messages.error(request, '❌ การประมูลนี้ไม่อยู่ในสถานะรับบิด')
+        # Validation 2: Check auction status is LIVE and not expired
+        from django.utils import timezone
+        if auction.status != Auction.Status.LIVE or auction.end_at <= timezone.now():
+            if auction.status == Auction.Status.LIVE:
+                auction.close_auction() # Close it if it should be closed
+            messages.error(request, '❌ การประมูลนี้จบลงแล้ว')
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Get bid amount from form

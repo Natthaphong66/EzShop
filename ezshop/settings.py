@@ -22,7 +22,7 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-51g38fv_x8gge461w^mr9x$qgv41d-hw2(adzd=nh_-o(23bh#')
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "1") == "1"
@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     # 3rd Party Apps
+    'channels',
     'tailwind',
     'theme',
     'django_browser_reload',
@@ -48,6 +50,7 @@ INSTALLED_APPS = [
     'accounts',
     'products',
     'auctions',
+    'chats',
 ]
 
 
@@ -80,6 +83,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ezshop.wsgi.application'
+ASGI_APPLICATION = 'ezshop.asgi.application'
+
+# Channel Layers (InMemory for development, use Redis for production)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 
 # Database
@@ -124,7 +135,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 

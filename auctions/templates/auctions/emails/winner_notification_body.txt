@@ -1,0 +1,13 @@
+เรียนคุณ {{ user.first_name }} {{ user.last_name }},
+
+ยินดีด้วย! คุณเป็นผู้ชนะการประมูลสินค้า: {{ auction.product.name }}
+
+รายละเอียด:
+- สินค้า: {{ auction.product.name }}
+- ราคาจบประมูล: ฿ {{ auction.final_price }}
+- วันที่จบ: {{ auction.ended_at|date:"d M Y, H:i" }}
+
+กรุณาติดต่อผู้ขายเพื่อดำเนินการชำระเงินและจัดส่งสินค้าต่อไป
+
+ขอบคุณที่ใช้บริการ EzShop
+ทีมงาน EzShop

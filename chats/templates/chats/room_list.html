@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">ข้อความของฉัน</h1>
+    </div>
+
+    {% if rooms %}
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {% for room in rooms %}
+        <a href="{% url 'chats:room' room_id=room.id %}"
+            class="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
+            <!-- Avatar -->
+            <div class="relative flex-shrink-0">
+                {% if room.other_user and room.other_user.profile_picture %}
+                <img src="{{ room.other_user.profile_picture.url }}"
+                    class="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                    alt="{{ room.other_user.get_full_name_display }}">
+                {% else %}
+                <div
+                    class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shadow-sm">
+                    {% if room.other_user %}{{ room.other_user.get_full_name_display|first|upper }}{% else %}?{% endif%}
+                </div>
+                {% endif %}
+                {% if room.unread_count > 0 %}
+                <span
+                    class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {{ room.unread_count }}
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between mb-1">
+                    <h3 class="font-semibold text-slate-800 truncate">
+                        {% if room.other_user %}{{ room.other_user.get_full_name_display }}{% else %}Unknown User{%endif %}
+                    </h3>
+                    {% if room.last_message %}
+                    <span class="text-xs text-slate-400 flex-shrink-0 ml-2">
+                        {{ room.last_message.created_at|timesince }} ago
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if room.product %}
+                <p class="text-xs text-blue-600 mb-1">
+                    <span class="bg-blue-100 px-2 py-0.5 rounded-full">{{ room.product.name|truncatechars:30 }}</span>
+                </p>
+                {% endif %}
+
+                {% if room.last_message %}
+                <p
+                    class="text-sm text-slate-500 truncate {% if room.unread_count > 0 %}font-medium text-slate-700{% endif %}">
+                    {% if room.last_message.sender == request.user %}คุณ: {% endif %}{{room.last_message.content|truncatechars:50 }}
+                </p>
+                {% else %}
+                <p class="text-sm text-slate-400 italic">ยังไม่มีข้อความ</p>
+                {% endif %}
+            </div>
+
+            <!-- Arrow -->
+            <svg class="w-5 h-5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+            <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z">
+                </path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-700 mb-2">ยังไม่มีข้อความ</h3>
+        <p class="text-slate-500 mb-6">เริ่มแชทกับผู้ขายโดยไปที่หน้าสินค้าและกดปุ่ม "แชทกับผู้ขาย"</p>
+        <a href="{% url 'home' %}"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-800 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                </path>
+            </svg>
+            ดูสินค้า
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
