@@ -19,11 +19,22 @@ class ChatRoomListView(LoginRequiredMixin, ListView):
     context_object_name = 'rooms'
 
     def get_queryset(self):
-        return ChatRoom.objects.filter(
+        queryset = ChatRoom.objects.filter(
             participants=self.request.user
         ).annotate(
             last_message_time=Max('messages__created_at')
         ).order_by('-last_message_time')
+        
+        # Filter by type: buyers or sellers
+        filter_type = self.request.GET.get('filter')
+        if filter_type == 'buyers':
+            # Chats where the product belongs to current user (people want to buy from us)
+            queryset = queryset.filter(product__seller=self.request.user)
+        elif filter_type == 'sellers':
+            # Chats where the product belongs to other user (we want to buy from them)
+            queryset = queryset.filter(product__isnull=False).exclude(product__seller=self.request.user)
+        
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -35,6 +46,7 @@ class ChatRoomListView(LoginRequiredMixin, ListView):
             room.last_message = room.get_last_message()
             rooms_with_data.append(room)
         context['rooms'] = rooms_with_data
+        context['filter'] = self.request.GET.get('filter', 'all')
         return context
 
 
@@ -59,6 +71,35 @@ class ChatRoomView(LoginRequiredMixin, DetailView):
         # Get messages - use 'chat_messages' to avoid conflict with Django flash messages
         context['chat_messages'] = room.messages.select_related('sender').all()
         context['other_user'] = room.get_other_participant(self.request.user)
+        # Add current user ID for reliable template comparison
+        context['current_user_id'] = str(self.request.user.id)
+        
+        # Get filter parameter
+        filter_type = self.request.GET.get('filter', 'all')
+        context['filter'] = filter_type
+        
+        # Add rooms list for sidebar with same filter
+        rooms = ChatRoom.objects.filter(
+            participants=self.request.user
+        ).annotate(
+            last_message_time=Max('messages__created_at')
+        ).order_by('-last_message_time')
+        
+        # Apply filter to sidebar rooms
+        if filter_type == 'buyers':
+            rooms = rooms.filter(product__seller=self.request.user)
+        elif filter_type == 'sellers':
+            rooms = rooms.filter(product__isnull=False).exclude(product__seller=self.request.user)
+        
+        rooms_with_data = []
+        for r in rooms:
+            r.other_user = r.get_other_participant(self.request.user)
+            r.unread_count = r.get_unread_count(self.request.user)
+            r.last_message = r.get_last_message()
+            rooms_with_data.append(r)
+        context['rooms'] = rooms_with_data
+        context['active_room'] = room
+        
         return context
 
 

@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'products',
     'auctions',
     'chats',
+    'orders',
+    'payments',
 ]
 
 
@@ -171,4 +173,8 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = f"EzShop <{EMAIL_HOST_USER}>"
+
+# Payment Settings
+PAYMENT_DEST_ACCOUNT = os.getenv("PAYMENT_DEST_ACCOUNT", "123-4-56789-0")  # ปลายทางบัญชีรับเงิน
+
 SERVER_EMAIL = EMAIL_HOST_USER

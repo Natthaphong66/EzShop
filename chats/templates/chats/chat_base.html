@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Override main container to remove padding for chat page -->
+<style>
+    body {
+        overflow: hidden;
+    }
+
+    main {
+        padding: 0 !important;
+        min-height: auto !important;
+        height: calc(100vh - 80px) !important;
+        overflow: hidden !important;
+    }
+
+    main>.max-w-7xl {
+        max-width: 100% !important;
+        height: 100% !important;
+    }
+</style>
+
+<div class="h-full px-6 py-4">
+    <div class="max-w-6xl mx-auto h-full">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full">
+            <div class="flex h-full">
+
+                <!-- Left Sidebar: Chat List -->
+                <div class="w-80 border-r border-slate-200 flex flex-col h-full">
+                    <!-- Tabs Header -->
+                    <div class="flex border-b border-slate-200 bg-white flex-shrink-0">
+                        <a href="{% url 'chats:room_list' %}"
+                            class="flex-1 py-3 text-center text-sm font-medium {% if not filter or filter == 'all' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            ทั้งหมด
+                        </a>
+                        <a href="{% url 'chats:room_list' %}?filter=buyers"
+                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'buyers' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            แชทกับผู้ซื้อ
+                        </a>
+                        <a href="{% url 'chats:room_list' %}?filter=sellers"
+                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'sellers' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            แชทกับผู้ขาย
+                        </a>
+                    </div>
+
+                    <!-- Chat List - scrollable -->
+                    <div class="flex-1 overflow-y-auto min-h-0">
+                        {% if rooms %}
+                        {% for room in rooms %}
+                        <a href="{% url 'chats:room' room_id=room.id %}{% if filter and filter != 'all' %}?filter={{ filter }}{% endif %}"
+                            class="flex items-center gap-3 p-3 hover:bg-slate-50 border-b border-slate-100 transition-colors {% if active_room and active_room.id == room.id %}bg-blue-50{% endif %}">
+                            <!-- Avatar -->
+                            <div class="relative flex-shrink-0">
+                                {% if room.other_user and room.other_user.profile_picture %}
+                                <img src="{{ room.other_user.profile_picture.url }}"
+                                    class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm">
+                                {% else %}
+                                <div
+                                    class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold shadow-sm">
+                                    {% if room.other_user %}{{ room.other_user.get_full_name_display|first|upper }}{%
+                                    else %}?{% endif %}
+                                </div>
+                                {% endif %}
+                                {% if room.unread_count > 0 %}
+                                <span
+                                    class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                    {{ room.unread_count }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Chat Info -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <span class="font-medium text-slate-800 text-sm truncate">
+                                        {% if room.other_user %}{{ room.other_user.get_full_name_display }}{%else%}Unknown{% endif %}
+                                    </span>
+                                    {% if room.last_message %}
+                                    <span class="text-xs text-slate-400 flex-shrink-0">
+                                        {{ room.last_message.created_at|time:"H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if room.last_message %}
+                                <p class="text-sm text-slate-500 truncate">{{ room.last_message.content|truncatechars:30}}</p>
+                                {% else %}
+                                <p class="text-sm text-slate-400 italic">ยังไม่มีข้อความ</p>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                        {% else %}
+                        <div class="p-8 text-center text-slate-400">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                </path>
+                            </svg>
+                            <p>ยังไม่มีการสนทนา</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right Panel: Chat Content -->
+                <div class="flex-1 flex flex-col bg-slate-50 min-h-0 h-full overflow-hidden">
+                    {% block chat_content %}
+                    <!-- Empty state when no chat selected -->
+                    <div class="flex-1 flex items-center justify-center">
+                        <div class="text-center text-slate-400">
+                            <svg class="w-20 h-20 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                </path>
+                            </svg>
+                            <p class="text-lg">เลือกการสนทนาเพื่อเริ่มแชท</p>
+                        </div>
+                    </div>
+                    {% endblock %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -61,34 +61,42 @@ class Auction(models.Model):
         self.ended_at = timezone.now()
         
         if highest_bid:
-            self.winner_bid = highest_bid
-            self.final_price = highest_bid.amount
+            # Check if highest bid meets reserve price (if set)
+            if self.reserve_price and highest_bid.amount < self.reserve_price:
+                # Reserve not met - no winner
+                self.winner_bid = None
+                self.final_price = highest_bid.amount  # Record final bid but no winner
+            else:
+                # Reserve met or no reserve - declare winner
+                self.winner_bid = highest_bid
+                self.final_price = highest_bid.amount
             
-            # Send email to winner
-            try:
-                subject = render_to_string('auctions/emails/winner_notification_subject.txt', {'auction': self})
-                # Force single line subject to avoid HeaderParseError
-                subject = ''.join(subject.splitlines())
-                
-                html_content = render_to_string('auctions/emails/winner_notification_body.html', {
-                    'auction': self,
-                    'user': highest_bid.bidder
-                })
-                text_content = render_to_string('auctions/emails/winner_notification_body.txt', {
-                    'auction': self,
-                    'user': highest_bid.bidder
-                })
-                
-                msg = EmailMultiAlternatives(
-                    subject,
-                    text_content,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [highest_bid.bidder.email]
-                )
-                msg.attach_alternative(html_content, "text/html")
-                msg.send()
-            except Exception as e:
-                print(f"Failed to send winner email: {e}")
+            # Send email to winner only if reserve was met
+            if self.winner_bid:
+                try:
+                    subject = render_to_string('auctions/emails/winner_notification_subject.txt', {'auction': self})
+                    # Force single line subject to avoid HeaderParseError
+                    subject = ''.join(subject.splitlines())
+                    
+                    html_content = render_to_string('auctions/emails/winner_notification_body.html', {
+                        'auction': self,
+                        'user': highest_bid.bidder
+                    })
+                    text_content = render_to_string('auctions/emails/winner_notification_body.txt', {
+                        'auction': self,
+                        'user': highest_bid.bidder
+                    })
+                    
+                    msg = EmailMultiAlternatives(
+                        subject,
+                        text_content,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [highest_bid.bidder.email]
+                    )
+                    msg.attach_alternative(html_content, "text/html")
+                    msg.send()
+                except Exception as e:
+                    print(f"Failed to send winner email: {e}")
         
         self.save()
 

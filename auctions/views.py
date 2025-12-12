@@ -93,6 +93,9 @@ class AuctionCreateView(LoginRequiredMixin, CreateView):
                 auction.product = product
                 auction.seller = self.request.user
                 auction.status = Auction.Status.LIVE  # Set status to LIVE immediately
+                # Set start time to now (user only selects end time)
+                from django.utils import timezone
+                auction.start_at = timezone.now()
                 auction.save()
                 
             return redirect(self.success_url)
