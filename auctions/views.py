@@ -70,8 +70,6 @@ class AuctionCreateView(LoginRequiredMixin, CreateView):
                 product.seller = self.request.user
                 # Set product price to auction starting price
                 product.price = auction_data['starting_price']
-                # Auction items are published immediately for now, or could be draft
-                product.status = Product.Status.PUBLISHED 
                 product.save()
                 
                 # Handle multiple images
@@ -145,6 +143,10 @@ class PlaceBidView(LoginRequiredMixin, View):
             )
             return redirect('auctions:auction_detail', pk=auction.pk)
         
+        # Get previous highest bidder before creating new bid
+        previous_highest_bid = auction.bids.order_by('-amount').first()
+        previous_bidder = previous_highest_bid.bidder if previous_highest_bid else None
+        
         # Create the bid
         with transaction.atomic():
             Bid.objects.create(
@@ -152,6 +154,11 @@ class PlaceBidView(LoginRequiredMixin, View):
                 bidder=request.user,
                 amount=bid_amount
             )
+            
+            # Notify previous bidder that they've been outbid
+            if previous_bidder and previous_bidder != request.user:
+                from notifications.services import notify_outbid
+                notify_outbid(auction, previous_bidder, bid_amount)
         
         messages.success(request, f'บิดสำเร็จ! ราคาของคุณ: ฿ {bid_amount:,.2f}')
         return redirect('auctions:auction_detail', pk=auction.pk)

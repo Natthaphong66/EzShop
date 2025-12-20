@@ -1,5 +1,4 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import (
     TemplateView,
@@ -19,22 +18,11 @@ class HomePageView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         # Exclude products that have an associated auction (auction__isnull=False means has auction)
-        published = Product.objects.filter(status=Product.Status.PUBLISHED).exclude(auction__isnull=False)
-        ctx["new_products"] = published.order_by("-created_at")[:8]
-        ctx["featured_products"] = published.order_by("-price")[:8]
-        ctx["spotlight_products"] = published.order_by("-updated_at")[:8]
+        products = Product.objects.exclude(auction__isnull=False)
+        ctx["new_products"] = products.order_by("-created_at")[:6]  # 1 row (6 items in xl)
+        ctx["featured_products"] = products.order_by("-price")[:6]
+        ctx["spotlight_products"] = products.order_by("-updated_at")[:6]
         return ctx
-
-
-class SellerRequiredMixin(UserPassesTestMixin):
-    """Ensure the current user is marked as seller."""
-
-    raise_exception = True
-
-    def test_func(self):
-        user = self.request.user
-        return user.is_authenticated and getattr(user, "is_seller", False)
-
 
 class ProductOwnerRequiredMixin(UserPassesTestMixin):
     """Allow access only to the product owner or superuser."""
@@ -54,17 +42,21 @@ class ProductListView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        user = self.request.user
         # Base queryset excludes auction products
-        base_qs = Product.objects.exclude(auction__isnull=False)
+        qs = Product.objects.exclude(auction__isnull=False)
         
-        if user.is_authenticated:
-            if user.is_superuser:
-                return base_qs
-            return base_qs.filter(
-                Q(status=Product.Status.PUBLISHED) | Q(seller=user)
-            )
-        return base_qs.filter(status=Product.Status.PUBLISHED)
+        # Filter by category if provided
+        category = self.request.GET.get('category')
+        if category:
+            qs = qs.filter(category=category)
+        
+        return qs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['selected_category'] = self.request.GET.get('category', '')
+        context['categories'] = Product.Category.choices
+        return context
 
 
 class ProductDetailView(DetailView):
@@ -72,18 +64,8 @@ class ProductDetailView(DetailView):
     template_name = "products/product_detail.html"
     context_object_name = "product"
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_authenticated:
-            if user.is_superuser:
-                return Product.objects.all()
-            return Product.objects.filter(
-                Q(status=Product.Status.PUBLISHED) | Q(seller=user)
-            )
-        return Product.objects.filter(status=Product.Status.PUBLISHED)
 
-
-class ProductCreateView(LoginRequiredMixin, SellerRequiredMixin, CreateView):
+class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = "products/product_form.html"

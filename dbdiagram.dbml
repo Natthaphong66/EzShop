@@ -1,0 +1,148 @@
+// EzShop Database Schema
+// สำหรับ dbdiagram.io
+// Copy ทั้งหมดนี้ไปวางที่ https://dbdiagram.io/d
+
+// =====================
+// USERS
+// =====================
+Table User {
+  id uuid [pk]
+  email varchar(255) [unique, not null]
+  phone varchar(20) [unique, not null]
+  password varchar(128) [not null]
+  first_name varchar(150)
+  last_name varchar(150)
+  bio text
+  profile_picture varchar(255)
+  is_active boolean [default: true]
+  is_staff boolean [default: false]
+  date_joined datetime
+  created_at datetime
+  updated_at datetime
+}
+
+// =====================
+// PRODUCTS
+// =====================
+Table Product {
+  id uuid [pk]
+  seller_id uuid [ref: > User.id]
+  name varchar(150) [not null]
+  category varchar(80) [note: 'electronics, fashion, home, sports, books, toys, beauty, automotive, pets, other']
+  price decimal(10,2) [not null]
+  description text
+  condition varchar(10) [note: 'new, used']
+  image varchar(255)
+  created_at datetime
+  updated_at datetime
+}
+
+Table ProductImage {
+  id bigint [pk, increment]
+  product_id uuid [ref: > Product.id]
+  image varchar(255) [not null]
+  created_at datetime
+}
+
+// =====================
+// AUCTIONS
+// =====================
+Table Auction {
+  id uuid [pk]
+  product_id uuid [unique, ref: - Product.id]
+  seller_id uuid [ref: > User.id]
+  starting_price decimal(12,2) [not null]
+  min_increment decimal(12,2) [not null]
+  reserve_price decimal(12,2)
+  status varchar(20) [note: 'scheduled, live, ended, canceled']
+  start_at datetime [not null]
+  end_at datetime [not null]
+  ended_at datetime
+  winner_bid_id uuid [unique, ref: - Bid.id]
+  final_price decimal(12,2)
+  created_at datetime
+}
+
+Table Bid {
+  id uuid [pk]
+  auction_id uuid [ref: > Auction.id]
+  bidder_id uuid [ref: > User.id]
+  amount decimal(12,2) [not null]
+  created_at datetime
+}
+
+// =====================
+// CHAT
+// =====================
+Table ChatRoom {
+  id uuid [pk]
+  product_id uuid [ref: > Product.id]
+  auction_id uuid [ref: > Auction.id]
+  created_at datetime
+  updated_at datetime
+}
+
+Table ChatRoom_Participants {
+  id bigint [pk, increment]
+  chatroom_id uuid [ref: > ChatRoom.id]
+  user_id uuid [ref: > User.id]
+  
+  indexes {
+    (chatroom_id, user_id) [unique]
+  }
+}
+
+Table Message {
+  id uuid [pk]
+  room_id uuid [ref: > ChatRoom.id]
+  sender_id uuid [ref: > User.id]
+  content text [not null]
+  is_read boolean [default: false]
+  created_at datetime
+}
+
+// =====================
+// ORDERS & PAYMENTS
+// =====================
+Table Order {
+  id uuid [pk]
+  reference_code varchar(10) [unique, note: 'EZ-XXXXXX']
+  buyer_id uuid [ref: > User.id]
+  seller_id uuid [ref: > User.id]
+  product_id uuid [ref: > Product.id]
+  amount decimal(10,2) [not null]
+  status varchar(20) [note: 'pending_payment, waiting_soft_verify, escrow_held, shipped, completed, disputed, cancelled']
+  created_at datetime
+  updated_at datetime
+}
+
+Table PaymentSlip {
+  id uuid [pk]
+  order_id uuid [unique, ref: - Order.id]
+  image varchar(255) [not null]
+  uploaded_at datetime
+  verify_status varchar(15) [note: 'unverified, passed, mismatch, error']
+  verify_message text
+  ocr_raw_text text
+  ocr_amount decimal(10,2)
+  ocr_account varchar(50)
+  ocr_datetime datetime
+}
+
+// =====================
+// NOTIFICATIONS
+// =====================
+Table Notification {
+  id uuid [pk]
+  user_id uuid [ref: > User.id]
+  notification_type varchar(20) [note: 'auction_won, auction_outbid, auction_ending, order_created, order_paid, order_shipped, new_message, system']
+  title varchar(200) [not null]
+  message text [not null]
+  link varchar(500)
+  auction_id uuid [ref: > Auction.id]
+  order_id uuid [ref: > Order.id]
+  is_read boolean [default: false]
+  created_at datetime
+}
+
+

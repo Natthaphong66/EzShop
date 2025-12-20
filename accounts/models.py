@@ -19,7 +19,6 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    is_seller = models.BooleanField(default=True)
 
     objects = UserManager()
 

@@ -71,8 +71,16 @@ class Auction(models.Model):
                 self.winner_bid = highest_bid
                 self.final_price = highest_bid.amount
             
-            # Send email to winner only if reserve was met
+            # Send notification and email to winner only if reserve was met
             if self.winner_bid:
+                # Send in-app notification
+                try:
+                    from notifications.services import notify_auction_won
+                    notify_auction_won(self, highest_bid.bidder)
+                except Exception as e:
+                    print(f"Failed to send winner notification: {e}")
+                
+                # Send email notification
                 try:
                     subject = render_to_string('auctions/emails/winner_notification_subject.txt', {'auction': self})
                     # Force single line subject to avoid HeaderParseError

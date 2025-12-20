@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'chats',
     'orders',
     'payments',
+    'notifications',
 ]
 
 

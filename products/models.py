@@ -10,10 +10,6 @@ class Product(models.Model):
     class Condition(models.TextChoices):
         NEW = "new", "ใหม่"
         USED = "used", "มือสอง"
-
-    class Status(models.TextChoices):
-        DRAFT = "draft", "ฉบับร่าง"
-        PUBLISHED = "published", "เผยแพร่แล้ว"
     
     class Category(models.TextChoices):
         ELECTRONICS = "electronics", "อิเล็กทรอนิกส์"
@@ -43,11 +39,6 @@ class Product(models.Model):
         default=Condition.NEW,
     )
     image = models.ImageField(upload_to="products/", blank=True, null=True)
-    status = models.CharField(
-        max_length=12,
-        choices=Status.choices,
-        default=Status.PUBLISHED,
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

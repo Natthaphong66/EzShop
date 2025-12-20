@@ -28,7 +28,75 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <a href="#" title="การแจ้งเตือน"
+      <!-- Notification Dropdown -->
+      {% if user.is_authenticated %}
+      <div class="relative" x-data="notificationDropdown()" @click.away="open = false">
+        <button @click="toggleDropdown()" title="การแจ้งเตือน"
+          class="h-20 px-3 flex items-center justify-center text-red-600 hover:bg-slate-100 transition-colors relative">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+            class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
+          </svg>
+          <!-- Badge -->
+          <span x-show="unreadCount > 0" x-text="unreadCount > 9 ? '9+' : unreadCount"
+            class="absolute top-4 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+          </span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div x-show="open" x-transition
+          class="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden"
+          style="display: none;">
+          <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+            <span class="font-semibold text-slate-900">การแจ้งเตือน</span>
+            <button x-show="unreadCount > 0" @click="markAllRead()" class="text-xs text-red-600 hover:underline">
+              อ่านทั้งหมด
+            </button>
+          </div>
+          
+          <div class="max-h-80 overflow-y-auto">
+            <template x-if="loading">
+              <div class="py-8 text-center text-slate-400">
+                <svg class="animate-spin h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            </template>
+            
+            <template x-if="!loading && notifications.length === 0">
+              <div class="py-8 text-center">
+                <svg class="w-12 h-12 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <p class="text-sm text-slate-500">ไม่มีการแจ้งเตือน</p>
+              </div>
+            </template>
+            
+            <template x-for="notification in notifications" :key="notification.id">
+              <a :href="notification.link || '#'" @click="markRead(notification.id)"
+                class="block px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50"
+                :class="{ 'bg-red-50/50': !notification.is_read }">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-sm text-slate-900" x-text="notification.title"
+                    :class="{ 'font-semibold': !notification.is_read }"></span>
+                  <span x-show="!notification.is_read" class="w-2 h-2 bg-red-500 rounded-full"></span>
+                </div>
+                <p class="text-xs text-slate-600 mt-0.5 line-clamp-2" x-text="notification.message"></p>
+                <p class="text-xs text-slate-400 mt-1" x-text="notification.time_ago"></p>
+              </a>
+            </template>
+          </div>
+          
+          <a href="{% url 'notifications:list' %}" 
+            class="block px-4 py-3 text-center text-sm text-red-600 hover:bg-slate-50 border-t border-slate-100">
+            ดูทั้งหมด
+          </a>
+        </div>
+      </div>
+      {% else %}
+      <a href="{% url 'accounts:login' %}" title="การแจ้งเตือน"
         class="h-20 px-3 flex items-center justify-center text-red-600 hover:bg-slate-100 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
           class="size-6">
@@ -36,6 +104,7 @@
             d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
         </svg>
       </a>
+      {% endif %}
       <a href="{% url 'chats:room_list' %}" title="แชท"
         class="h-20 px-3 flex items-center justify-center text-red-600 hover:bg-slate-100 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
@@ -46,10 +115,8 @@
       </a>
       <div class="flex items-center gap-4 ml-auto">
         {% if user.is_authenticated %}
-        {% if user.is_seller %}
         <a class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded font-semibold text-sm hover:bg-slate-800 transition-colors"
           href="{% url 'products:product_create' %}">ลงประกาศขาย</a>
-        {% endif %}
 
         <!-- Profile Dropdown -->
         <div class="relative" x-data="{ open: false }" @click.away="open = false">
@@ -133,6 +200,79 @@
     {% endif %}
     <div class="max-w-7xl mx-auto">{% block content %} {% endblock %}</div>
   </main>
+
+  {% if user.is_authenticated %}
+  <script>
+    function notificationDropdown() {
+      return {
+        open: false,
+        loading: false,
+        unreadCount: 0,
+        notifications: [],
+        
+        init() {
+          this.fetchNotifications();
+          // Refresh every 30 seconds
+          setInterval(() => this.fetchNotifications(), 30000);
+        },
+        
+        toggleDropdown() {
+          this.open = !this.open;
+          if (this.open) {
+            this.fetchNotifications();
+          }
+        },
+        
+        async fetchNotifications() {
+          try {
+            const response = await fetch('/notifications/api/dropdown/');
+            const data = await response.json();
+            this.unreadCount = data.unread_count;
+            this.notifications = data.notifications;
+          } catch (error) {
+            console.error('Failed to fetch notifications:', error);
+          }
+        },
+        
+        async markRead(id) {
+          try {
+            await fetch(`/notifications/api/mark-read/${id}/`, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+              }
+            });
+            // Update local state
+            const notification = this.notifications.find(n => n.id === id);
+            if (notification && !notification.is_read) {
+              notification.is_read = true;
+              this.unreadCount = Math.max(0, this.unreadCount - 1);
+            }
+          } catch (error) {
+            console.error('Failed to mark as read:', error);
+          }
+        },
+        
+        async markAllRead() {
+          try {
+            await fetch('/notifications/api/mark-all-read/', {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+              }
+            });
+            this.notifications.forEach(n => n.is_read = true);
+            this.unreadCount = 0;
+          } catch (error) {
+            console.error('Failed to mark all as read:', error);
+          }
+        }
+      }
+    }
+  </script>
+  {% endif %}
 </body>
 
 </html>

@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Header with Status -->
+        <div class="px-6 py-4 border-b border-slate-200">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-bold text-slate-800">รายละเอียดคำสั่งซื้อ</h1>
+                <span class="px-3 py-1 rounded-full text-sm font-medium
+                    {% if order.status == 'pending_payment' %}bg-yellow-100 text-yellow-800
+                    {% elif order.status == 'waiting_soft_verify' %}bg-blue-100 text-blue-800
+                    {% elif order.status == 'escrow_held' %}bg-green-100 text-green-800
+                    {% elif order.status == 'shipped' %}bg-purple-100 text-purple-800
+                    {% elif order.status == 'completed' %}bg-emerald-100 text-emerald-800
+                    {% elif order.status == 'disputed' %}bg-red-100 text-red-800
+                    {% elif order.status == 'cancelled' %}bg-slate-100 text-slate-600
+                    {% endif %}">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- Product Info -->
+            <div class="flex gap-4 mb-6 pb-6 border-b border-slate-200">
+                {% if order.product.image %}
+                <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}"
+                    class="w-20 h-20 object-cover rounded-lg">
+                {% else %}
+                <div class="w-20 h-20 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                {% endif %}
+                <div class="flex-1">
+                    <h2 class="font-semibold text-slate-800">{{ order.product.name }}</h2>
+                    <p class="text-sm text-slate-500">ผู้ขาย: {{ order.seller.get_full_name_display }}</p>
+                    <p class="text-xl font-bold text-green-600 mt-1">฿{{ order.amount|floatformat:0|intcomma }}</p>
+                </div>
+            </div>
+
+            <!-- Order Progress -->
+            <div class="mb-6">
+                <h3 class="font-semibold text-slate-800 mb-4">สถานะการสั่งซื้อ</h3>
+                <div class="flex items-center justify-between">
+                    {% with statuses="pending_payment,waiting_soft_verify,escrow_held,shipped,completed" %}
+                    {% for status in statuses.split %}
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                            {% if order.status == status %}bg-green-500 text-white
+                            {% elif forloop.counter0 < "
+                            pending_payment,waiting_soft_verify,escrow_held,shipped,completed".split|index:order.status
+                            %}bg-green-500 text-white {% else %}bg-slate-200 text-slate-500{% endif %}">
+                            {{ forloop.counter }}
+                        </div>
+                        <span class="text-xs text-slate-500 mt-1 text-center w-16">
+                            {% if status == 'pending_payment' %}รอชำระ
+                            {% elif status == 'waiting_soft_verify' %}รอตรวจสอบ
+                            {% elif status == 'escrow_held' %}เงินในระบบ
+                            {% elif status == 'shipped' %}จัดส่งแล้ว
+                            {% elif status == 'completed' %}สำเร็จ{% endif %}
+                        </span>
+                    </div>
+                    {% if not forloop.last %}
+                    <div class="flex-1 h-1 bg-slate-200 mx-2 rounded"></div>
+                    {% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+            </div>
+
+            <!-- Payment Slip Status -->
+            {% if order.payment_slip %}
+            <div class="bg-slate-50 rounded-xl p-4 mb-6">
+                <h3 class="font-semibold text-slate-800 mb-3">สลิปการโอนเงิน</h3>
+                <div class="flex gap-4">
+                    <img src="{{ order.payment_slip.image.url }}" alt="Payment Slip"
+                        class="w-32 h-32 object-cover rounded-lg border border-slate-200">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-1 rounded text-xs font-medium
+                                {% if order.payment_slip.verify_status == 'passed' %}bg-green-100 text-green-800
+                                {% elif order.payment_slip.verify_status == 'mismatch' %}bg-red-100 text-red-800
+                                {% elif order.payment_slip.verify_status == 'error' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ order.payment_slip.get_verify_status_display }}
+                            </span>
+                        </div>
+                        {% if order.payment_slip.verify_message %}
+                        <p class="text-sm text-slate-600">{{ order.payment_slip.verify_message }}</p>
+                        {% endif %}
+                        {% if order.payment_slip.ocr_amount %}
+                        <p class="text-sm text-slate-500 mt-2">ยอดในสลิป:฿{{order.payment_slip.ocr_amount|floatformat:0|intcomma }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <a href="{% url 'orders:my_orders' %}"
+                    class="flex-1 py-3 px-4 border border-slate-300 text-slate-700 rounded-lg font-medium text-center hover:bg-slate-50 transition-colors">
+                    กลับไปรายการ
+                </a>
+
+                {% if order.buyer == request.user %}
+                {% if order.status == 'pending_payment' or order.status == 'waiting_soft_verify' %}
+                <a href="{% url 'orders:upload_slip' order_id=order.id %}"
+                    class="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-center hover:from-green-600 hover:to-emerald-700 transition-all">
+                    {% if order.payment_slip %}อัปโหลดสลิปใหม่{% else %}อัปโหลดสลิป{% endif %}
+                </a>
+                <form method="post" action="{% url 'orders:cancel_order' order_id=order.id %}" class="flex-1"
+                    onsubmit="return confirm('ยืนยันการยกเลิกคำสั่งซื้อ?');">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full py-3 px-4 border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors">
+                        ยกเลิกคำสั่งซื้อ
+                    </button>
+                </form>
+                {% elif order.status == 'shipped' %}
+                <form method="post" action="{% url 'orders:confirm_received' order_id=order.id %}" class="flex-1">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all">
+                        ยืนยันได้รับสินค้า
+                    </button>
+                </form>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -13,7 +13,7 @@
             {{ other_user.get_full_name_display|first|upper }}
         </div>
         {% endif %}
-        <div>
+        <div class="flex-1">
             <h3 class="font-semibold text-slate-800">{{ other_user.get_full_name_display }}</h3>
             {% if room.product %}
             <a href="{% url 'products:product_detail' pk=room.product.id %}"
@@ -22,14 +22,45 @@
             </a>
             {% endif %}
         </div>
+
+        <!-- Payment Button - only show if this chat has a product and user is buyer (not seller) -->
+        {% if room.product and room.product.seller != request.user %}
+        <a href="{% url 'orders:create_order' product_id=room.product.id %}"
+            class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+                </path>
+            </svg>
+            จ่ายเงิน
+        </a>
+        {% endif %}
         {% endif %}
     </div>
 
     <!-- Messages Area - scrollable -->
     <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 min-h-0" x-ref="messagesContainer">
+        {% load tz %}
         {% for message in chat_messages %}
+
+        <!-- Date Separator -->
+        {% ifchanged message.created_at|date:"Y-m-d" %}
+        <div class="flex items-center justify-center my-4">
+            <div class="bg-slate-200 text-slate-600 text-xs font-medium px-3 py-1 rounded-full">
+                {% with today=message.created_at|date:"Y-m-d" %}
+                {% now "Y-m-d" as current_date %}
+                {% if today == current_date %}
+                Today
+                {% else %}
+                {{ message.created_at|date:"d M Y" }}
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endifchanged %}
+
         {% with sender_id=message.sender.id|stringformat:"s" %}
-        <div data-message-id="{{ message.id }}"
+        <div data-message-id="{{ message.id }}" data-message-date="{{ message.created_at|date:'Y-m-d' }}"
             class="flex {% if sender_id == current_user_id %}justify-end{% else %}justify-start{% endif %}">
             <div class="flex items-end gap-2 max-w-[70%]">
                 {% if sender_id != current_user_id %}
@@ -65,6 +96,12 @@
             <div :class="message.is_mine ? 'flex justify-end' : 'flex justify-start'">
                 <div class="flex items-end gap-2 max-w-[70%]">
                     <template x-if="!message.is_mine">
+                        <template x-if="message.sender_profile_picture">
+                            <img :src="message.sender_profile_picture"
+                                class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                        </template>
+                    </template>
+                    <template x-if="!message.is_mine && !message.sender_profile_picture">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                             x-text="message.sender_name ? message.sender_name.charAt(0).toUpperCase() : '?'"></div>
                     </template>

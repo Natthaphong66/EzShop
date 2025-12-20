@@ -210,9 +210,11 @@ class GetMessagesView(LoginRequiredMixin, View):
             'id': str(msg.id),
             'sender_id': str(msg.sender.id),
             'sender_name': msg.sender.get_full_name_display(),
+            'sender_profile_picture': msg.sender.profile_picture.url if msg.sender.profile_picture else None,
             'content': msg.content,
             'is_mine': msg.sender == request.user,
             'created_at': msg.created_at.isoformat(),
+            'time': msg.created_at.strftime('%H:%M'),
         } for msg in messages]
         
         return JsonResponse({'messages': messages_data})
@@ -252,9 +254,11 @@ class SendMessageView(LoginRequiredMixin, View):
                 'id': str(message.id),
                 'sender_id': str(message.sender.id),
                 'sender_name': message.sender.get_full_name_display(),
+                'sender_profile_picture': message.sender.profile_picture.url if message.sender.profile_picture else None,
                 'content': message.content,
                 'is_mine': True,
                 'created_at': message.created_at.isoformat(),
+                'time': message.created_at.strftime('%H:%M'),
             }
         })
 
