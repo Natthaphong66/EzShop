@@ -2,12 +2,55 @@
 Service functions สำหรับสร้าง notifications
 """
 from django.urls import reverse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import Notification
+
+
+def send_notification_websocket(user, notification):
+    """Send notification via WebSocket"""
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            # Calculate time ago
+            diff = timezone.now() - notification.created_at
+            if diff.days > 0:
+                time_ago = f'{diff.days} วันที่แล้ว' if diff.days > 1 else 'เมื่อวาน'
+            elif diff.seconds // 3600 > 0:
+                time_ago = f'{diff.seconds // 3600} ชั่วโมงที่แล้ว'
+            elif diff.seconds // 60 > 0:
+                time_ago = f'{diff.seconds // 60} นาทีที่แล้ว'
+            else:
+                time_ago = 'เมื่อสักครู่'
+            
+            notification_data = {
+                'id': str(notification.id),
+                'type': notification.notification_type,
+                'title': notification.title,
+                'message': notification.message[:100] + '...' if len(notification.message) > 100 else notification.message,
+                'link': notification.link,
+                'is_read': notification.is_read,
+                'created_at': notification.created_at.strftime('%d/%m/%Y %H:%M'),
+                'time_ago': time_ago,
+            }
+            
+            async_to_sync(channel_layer.group_send)(
+                f'notifications_{user.id}',
+                {
+                    'type': 'notification_created',
+                    'notification': notification_data
+                }
+            )
+    except Exception as e:
+        print(f"Failed to send WebSocket notification: {e}")
 
 
 def notify_auction_won(auction, winner):
     """แจ้งเตือนผู้ชนะการประมูล"""
-    Notification.create_notification(
+    notification = Notification.create_notification(
         user=winner,
         notification_type=Notification.NotificationType.AUCTION_WON,
         title='🎉 ยินดีด้วย! คุณชนะการประมูล',
@@ -15,11 +58,12 @@ def notify_auction_won(auction, winner):
         link=reverse('auctions:auction_detail', args=[str(auction.id)]),
         auction=auction
     )
+    send_notification_websocket(winner, notification)
 
 
 def notify_outbid(auction, previous_bidder, new_amount):
     """แจ้งเตือนเมื่อถูกบิดแซง"""
-    Notification.create_notification(
+    notification = Notification.create_notification(
         user=previous_bidder,
         notification_type=Notification.NotificationType.AUCTION_OUTBID,
         title='⚠️ มีคนบิดแซงคุณแล้ว!',
@@ -27,6 +71,7 @@ def notify_outbid(auction, previous_bidder, new_amount):
         link=reverse('auctions:auction_detail', args=[str(auction.id)]),
         auction=auction
     )
+    send_notification_websocket(previous_bidder, notification)
 
 
 def notify_auction_ending_soon(auction, bidder):
@@ -43,7 +88,7 @@ def notify_auction_ending_soon(auction, bidder):
 
 def notify_new_order(order):
     """แจ้งเตือนผู้ขายเมื่อมีคำสั่งซื้อใหม่"""
-    Notification.create_notification(
+    notification = Notification.create_notification(
         user=order.seller,
         notification_type=Notification.NotificationType.ORDER_CREATED,
         title='🛒 มีคำสั่งซื้อใหม่!',
@@ -51,6 +96,7 @@ def notify_new_order(order):
         link=reverse('orders:order_detail', args=[str(order.id)]),
         order=order
     )
+    send_notification_websocket(order.seller, notification)
 
 
 def notify_order_paid(order):

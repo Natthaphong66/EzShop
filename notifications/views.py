@@ -79,6 +79,22 @@ class MarkAsReadView(LoginRequiredMixin, View):
             user=request.user
         )
         notification.mark_as_read()
+        
+        # Send WebSocket update
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    f'notifications_{request.user.id}',
+                    {
+                        'type': 'notification_read',
+                    }
+                )
+        except Exception as e:
+            print(f"Failed to send WebSocket update: {e}")
+        
         return JsonResponse({'success': True})
 
 
@@ -90,4 +106,20 @@ class MarkAllAsReadView(LoginRequiredMixin, View):
             user=request.user,
             is_read=False
         ).update(is_read=True)
+        
+        # Send WebSocket update
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    f'notifications_{request.user.id}',
+                    {
+                        'type': 'notification_read',
+                    }
+                )
+        except Exception as e:
+            print(f"Failed to send WebSocket update: {e}")
+        
         return JsonResponse({'success': True, 'marked_count': updated})

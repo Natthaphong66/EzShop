@@ -97,6 +97,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'id': str(message.id),
             'sender_id': str(message.sender.id),
             'sender_name': message.sender.get_full_name_display(),
+            'sender_profile_picture': message.sender.profile_picture.url if message.sender.profile_picture else None,
             'content': message.content,
             'is_mine': False,  # Will be determined client-side
             'created_at': message.created_at.isoformat(),

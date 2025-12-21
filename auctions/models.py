@@ -71,14 +71,14 @@ class Auction(models.Model):
                 self.winner_bid = highest_bid
                 self.final_price = highest_bid.amount
             
-            # Send notification and email to winner only if reserve was met
+            # Handle winner: create Order, ChatRoom, send notifications
             if self.winner_bid:
-                # Send in-app notification
+                # สร้าง Order, ChatRoom, Welcome Message, Notifications
                 try:
-                    from notifications.services import notify_auction_won
-                    notify_auction_won(self, highest_bid.bidder)
+                    from auctions.services import handle_auction_winner
+                    handle_auction_winner(self, highest_bid.bidder)
                 except Exception as e:
-                    print(f"Failed to send winner notification: {e}")
+                    print(f"Failed to handle auction winner: {e}")
                 
                 # Send email notification
                 try:

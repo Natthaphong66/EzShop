@@ -146,7 +146,7 @@
             sending: false,
             newMessages: [],
             lastMessageId: null,
-            pollInterval: null,
+            websocket: null,
             roomId: '{{ room.id }}',
             currentUserId: '{{ current_user_id }}',
 
@@ -156,7 +156,51 @@
                     this.lastMessageId = existingMessages[existingMessages.length - 1].dataset.messageId;
                 }
                 this.scrollToBottom();
-                this.pollInterval = setInterval(() => this.fetchNewMessages(), 3000);
+                this.connectWebSocket();
+            },
+            
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/chat/${this.roomId}/`;
+                
+                this.websocket = new WebSocket(wsUrl);
+                
+                this.websocket.onopen = () => {
+                    console.log('WebSocket connected');
+                };
+                
+                this.websocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'chat_message') {
+                        const message = data.message;
+                        message.is_mine = message.sender_id === this.currentUserId;
+                        message.time = new Date(message.created_at).toLocaleTimeString('th-TH', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        
+                        // Check if message already exists
+                        const existingIds = new Set(this.newMessages.map(m => m.id));
+                        document.querySelectorAll('[data-message-id]').forEach(el => {
+                            existingIds.add(el.dataset.messageId);
+                        });
+                        
+                        if (!existingIds.has(message.id)) {
+                            this.newMessages.push(message);
+                            this.lastMessageId = message.id;
+                            this.scrollToBottom();
+                        }
+                    }
+                };
+                
+                this.websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+                
+                this.websocket.onclose = () => {
+                    console.log('WebSocket disconnected, reconnecting...');
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
             },
 
             scrollToBottom() {
@@ -176,64 +220,41 @@
                 this.messageInput = '';
 
                 try {
-                    const response = await fetch('/chats/api/room/' + this.roomId + '/send/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': this.getCsrfToken()
-                        },
-                        body: JSON.stringify({ content: content })
-                    });
-
-                    const data = await response.json();
-                    if (data.success) {
-                        this.newMessages.push({
-                            id: data.message.id,
-                            content: data.message.content,
-                            sender_name: data.message.sender_name,
-                            time: data.message.time,
-                            is_mine: true
+                    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                        // Send via WebSocket
+                        this.websocket.send(JSON.stringify({
+                            type: 'chat_message',
+                            content: content
+                        }));
+                    } else {
+                        // Fallback to HTTP if WebSocket not ready
+                        const response = await fetch('/chats/api/room/' + this.roomId + '/send/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': this.getCsrfToken()
+                            },
+                            body: JSON.stringify({ content: content })
                         });
-                        this.lastMessageId = data.message.id;
-                        this.scrollToBottom();
+
+                        const data = await response.json();
+                        if (data.success) {
+                            this.newMessages.push({
+                                id: data.message.id,
+                                content: data.message.content,
+                                sender_name: data.message.sender_name,
+                                time: data.message.time,
+                                is_mine: true
+                            });
+                            this.lastMessageId = data.message.id;
+                            this.scrollToBottom();
+                        }
                     }
                 } catch (error) {
                     console.error('Error sending message:', error);
                     this.messageInput = content;
                 } finally {
                     this.sending = false;
-                }
-            },
-
-            async fetchNewMessages() {
-                try {
-                    let url = `/chats/api/room/${this.roomId}/messages/`;
-                    if (this.lastMessageId) {
-                        url += `?after=${this.lastMessageId}`;
-                    }
-
-                    const response = await fetch(url);
-                    const data = await response.json();
-
-                    if (data.messages && data.messages.length > 0) {
-                        const existingIds = new Set(this.newMessages.map(m => m.id));
-                        document.querySelectorAll('[data-message-id]').forEach(el => {
-                            existingIds.add(el.dataset.messageId);
-                        });
-
-                        const newOnes = data.messages.filter(m => !existingIds.has(m.id)).map(m => ({
-                            ...m,
-                            is_mine: m.sender_id === this.currentUserId
-                        }));
-
-                        if (newOnes.length > 0) {
-                            this.newMessages.push(...newOnes);
-                            this.lastMessageId = newOnes[newOnes.length - 1].id;
-                            this.scrollToBottom();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching messages:', error);
                 }
             },
 
