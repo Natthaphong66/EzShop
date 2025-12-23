@@ -149,11 +149,15 @@ class PlaceBidView(LoginRequiredMixin, View):
         
         # Create the bid
         with transaction.atomic():
-            Bid.objects.create(
+            bid = Bid.objects.create(
                 auction=auction,
                 bidder=request.user,
                 amount=bid_amount
             )
+            
+            # Send WebSocket message to all viewers
+            from auctions.services import send_bid_websocket
+            send_bid_websocket(auction, bid)
             
             # Notify previous bidder that they've been outbid
             if previous_bidder and previous_bidder != request.user:
@@ -162,3 +166,73 @@ class PlaceBidView(LoginRequiredMixin, View):
         
         messages.success(request, f'บิดสำเร็จ! ราคาของคุณ: ฿ {bid_amount:,.2f}')
         return redirect('auctions:auction_detail', pk=auction.pk)
+
+
+class BidHistoryView(View):
+    """API endpoint to get bid history for an auction"""
+    
+    def get(self, request, pk):
+        auction = get_object_or_404(Auction, pk=pk)
+        
+        bids = Bid.objects.filter(
+            auction=auction
+        ).select_related('bidder').order_by('-created_at')[:20]
+        
+        bids_data = [
+            {
+                'id': str(bid.id),
+                'bidder_name': bid.bidder.get_full_name_display(),
+                'bidder_profile_picture': bid.bidder.profile_picture.url if bid.bidder.profile_picture else None,
+                'amount': str(bid.amount),
+                'created_at': bid.created_at.isoformat(),
+                'created_at_display': bid.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+            }
+            for bid in bids
+        ]
+        
+        return JsonResponse({
+            'success': True,
+            'bids': bids_data
+        })
+
+
+class MyAuctionsView(LoginRequiredMixin, ListView):
+    """แสดงรายการการประมูลที่ผู้ใช้สร้าง"""
+    model = Auction
+    template_name = 'auctions/my_auctions.html'
+    context_object_name = 'auctions'
+    paginate_by = 12
+    
+    def get_queryset(self):
+        return Auction.objects.filter(
+            seller=self.request.user
+        ).select_related('product').prefetch_related('bids').order_by('-created_at')
+
+
+class MyBidsView(LoginRequiredMixin, ListView):
+    """แสดงรายการการบิดที่ผู้ใช้เคยทำ"""
+    template_name = 'auctions/my_bids.html'
+    context_object_name = 'bids'
+    paginate_by = 12
+    
+    def get_queryset(self):
+        # Get unique auctions that user has bid on
+        auctions = Auction.objects.filter(
+            bids__bidder=self.request.user
+        ).distinct().select_related('product', 'seller').prefetch_related('bids').order_by('-created_at')
+        
+        # Add user's highest bid for each auction
+        auctions_with_bid = []
+        for auction in auctions:
+            user_bids = auction.bids.filter(bidder=self.request.user).order_by('-amount')
+            highest_bid = user_bids.first()
+            current_highest_bid = auction.bids.order_by('-amount').first()
+            
+            auctions_with_bid.append({
+                'auction': auction,
+                'my_highest_bid': float(highest_bid.amount) if highest_bid else None,
+                'my_bid_count': user_bids.count(),
+                'is_leading': current_highest_bid.bidder == self.request.user if current_highest_bid else False,
+            })
+        
+        return auctions_with_bid

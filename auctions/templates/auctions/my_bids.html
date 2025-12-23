@@ -3,12 +3,16 @@
 
 {% block content %}
 <header class="flex justify-between items-center mb-6 mt-2">
-    <h1 class="text-2xl font-bold text-slate-900">สินค้าประมูล</h1>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">บิดของฉัน</h1>
+        <p class="text-sm text-slate-500 mt-1">รายการประมูลที่คุณเคยบิด</p>
+    </div>
 </header>
 
-{% if auctions %}
+{% if bids %}
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
-    {% for auction in auctions %}
+    {% for item in bids %}
+    {% with auction=item.auction %}
     <a href="{% url 'auctions:auction_detail' auction.pk %}"
         class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200 border border-slate-200 group h-full flex flex-col">
         <div class="relative aspect-square bg-slate-100 overflow-hidden">
@@ -25,9 +29,21 @@
             {% endif %}
 
             <!-- Status Badge -->
-            <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                LIVE
+            <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm
+                {% if auction.status == 'live' %}bg-red-600 text-white
+                {% elif auction.status == 'ended' %}bg-green-600 text-white
+                {% else %}bg-slate-600 text-white{% endif %}">
+                {% if auction.status == 'live' %}LIVE
+                {% elif auction.status == 'ended' %}ENDED
+                {% else %}{{ auction.get_status_display|upper }}{% endif %}
             </div>
+            
+            <!-- Leading Badge -->
+            {% if item.is_leading and auction.status == 'live' %}
+            <div class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">
+                🏆 นำอยู่
+            </div>
+            {% endif %}
         </div>
         <div class="p-3 flex-1 flex flex-col">
             <h3
@@ -38,6 +54,9 @@
             <div class="mt-auto">
                 <p class="text-xs text-slate-500 mb-1">ราคาปัจจุบัน</p>
                 <p class="text-red-600 font-bold text-lg">฿ {{auction.current_price|default:auction.starting_price|intcomma }}</p>
+                
+                <p class="text-xs text-blue-600 font-medium mt-1">บิดของคุณ: ฿{{ item.my_highest_bid|intcomma }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">บิด {{ item.my_bid_count }} ครั้ง</p>
 
                 <div class="flex items-center gap-1 mt-2 text-xs text-slate-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -50,15 +69,44 @@
             </div>
         </div>
     </a>
+    {% endwith %}
     {% endfor %}
 </div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav class="mt-8 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" 
+       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+        ก่อนหน้า
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-sm font-medium text-slate-700">
+        หน้า {{ page_obj.number }} จาก {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" 
+       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+        ถัดไป
+    </a>
+    {% endif %}
+</nav>
+{% endif %}
+
 {% else %}
-<div class="text-center py-12">
+<div class="text-center py-12 bg-white rounded-xl border border-slate-200">
     <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
     </svg>
-    <p class="text-lg text-slate-500">ยังไม่มีสินค้าประมูล</p>
+    <p class="text-lg text-slate-500 mb-2">คุณยังไม่เคยบิดเลย</p>
+    <a href="{% url 'auctions:auction_list' %}" class="text-red-600 hover:text-red-700 font-medium">
+        ดูการประมูลทั้งหมด
+    </a>
 </div>
 {% endif %}
 {% endblock %}
+

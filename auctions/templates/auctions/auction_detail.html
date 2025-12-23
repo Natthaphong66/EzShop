@@ -2,7 +2,7 @@
 {% load humanize %}
 
 {% block content %}
-<article class="max-w-4xl mx-auto">
+<article class="max-w-4xl mx-auto mt-2">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Image Gallery -->
         <div class="flex flex-col gap-4" x-data="{ 
@@ -85,10 +85,10 @@
             <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
                 <p class="text-sm text-slate-500 mb-1">ราคาปัจจุบัน</p>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-bold text-red-600">฿
-                        {{auction.current_price|default:auction.starting_price|intcomma }}</span>
+                    <span class="text-4xl font-bold text-red-600" id="current-price-display">
+                        ฿{{auction.current_price|default:auction.starting_price|intcomma }}</span>
                     {% if auction.current_price %}
-                    <span class="text-sm text-slate-400">({{ auction.bids.count }} บิด)</span>
+                    <span class="text-sm text-slate-400" id="bid-count-display">({{ auction.bids.count }} บิด)</span>
                     {% else %}
                     <span class="text-sm text-slate-400">(ราคาเริ่มต้น)</span>
                     {% endif %}
@@ -235,6 +235,39 @@
         </div>
     </div>
 
+    <!-- Bid History -->
+    {% if auction.status == 'live' %}
+    <div class="mt-12 bg-white p-8 rounded-xl border border-slate-200 shadow-sm" 
+         x-data="bidHistory('{{ auction.id }}', {{ auction.current_price|default:auction.starting_price }}, {{ auction.bids.count }})" x-init="init()">
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">ประวัติการบิด</h2>
+        
+        <div class="space-y-3 max-h-96 overflow-y-auto" id="bidHistoryList">
+            <template x-for="bid in bidHistory" :key="bid.id">
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm"
+                             x-show="!bid.bidder_profile_picture">
+                            <span x-text="bid.bidder_name.charAt(0).toUpperCase()"></span>
+                        </div>
+                        <img :src="bid.bidder_profile_picture" :alt="bid.bidder_name" 
+                             class="w-10 h-10 rounded-full object-cover" x-show="bid.bidder_profile_picture">
+                        <div>
+                            <p class="font-semibold text-slate-900" x-text="bid.bidder_name"></p>
+                            <p class="text-xs text-slate-500" x-text="bid.created_at_display"></p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-red-600 text-lg" x-text="'฿' + parseFloat(bid.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></p>
+                    </div>
+                </div>
+            </template>
+            <div x-show="bidHistory.length === 0" class="text-center py-8 text-slate-500">
+                <p>ยังไม่มีการบิด</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Description -->
     <div class="mt-12 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
         <h2 class="text-2xl font-bold text-slate-900 mb-4">รายละเอียดสินค้า</h2>
@@ -243,4 +276,109 @@
         </div>
     </div>
 </article>
+
+{% if auction.status == 'live' %}
+<script>
+function bidHistory(auctionId, initialPrice, initialCount) {
+    return {
+        auctionId: auctionId,
+        websocket: null,
+        bidHistory: [],
+        currentPrice: initialPrice,
+        bidCount: initialCount,
+        
+        init() {
+            this.connectWebSocket();
+            this.loadBidHistory();
+        },
+        
+        connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/auction/${this.auctionId}/`;
+            
+            this.websocket = new WebSocket(wsUrl);
+            
+            this.websocket.onopen = () => {
+                console.log('Auction WebSocket connected');
+                // Request bid history
+                this.websocket.send(JSON.stringify({ type: 'get_bid_history' }));
+            };
+            
+            this.websocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'bid_history') {
+                    this.bidHistory = data.data;
+                } else if (data.type === 'new_bid') {
+                    // Add new bid to the top of the list
+                    this.bidHistory.unshift(data.data);
+                    // Update current price and bid count
+                    this.currentPrice = parseFloat(data.data.current_price);
+                    this.bidCount = data.data.bid_count;
+                    // Update the displayed price on the page (Alpine.js will auto-update)
+                    this.$nextTick(() => {
+                        this.updatePriceDisplay();
+                    });
+                } else if (data.type === 'auction_state') {
+                    // Update auction state
+                    if (data.data) {
+                        this.currentPrice = parseFloat(data.data.current_price);
+                        this.bidCount = data.data.bid_count;
+                        this.$nextTick(() => {
+                            this.updatePriceDisplay();
+                        });
+                    }
+                } else if (data.type === 'auction_ended') {
+                    // Handle auction ended
+                    window.location.reload();
+                }
+            };
+            
+            this.websocket.onerror = (error) => {
+                console.error('Auction WebSocket error:', error);
+            };
+            
+            this.websocket.onclose = () => {
+                console.log('Auction WebSocket disconnected, reconnecting...');
+                setTimeout(() => this.connectWebSocket(), 3000);
+            };
+        },
+        
+        async loadBidHistory() {
+            try {
+                const response = await fetch(`/auctions/api/${this.auctionId}/bids/`);
+                const data = await response.json();
+                if (data.success) {
+                    this.bidHistory = data.bids;
+                }
+            } catch (error) {
+                console.error('Failed to load bid history:', error);
+            }
+        },
+        
+        updatePriceDisplay() {
+            // Update the price display in the current price box
+            const priceElement = document.getElementById('current-price-display');
+            const countElement = document.getElementById('bid-count-display');
+            if (priceElement) {
+                priceElement.textContent = '฿' + this.currentPrice.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            }
+            if (countElement) {
+                countElement.textContent = `(${this.bidCount} บิด)`;
+            } else if (this.bidCount > 0) {
+                // Create bid count element if it doesn't exist
+                const priceContainer = priceElement?.parentElement;
+                if (priceContainer) {
+                    const newCountElement = document.createElement('span');
+                    newCountElement.className = 'text-sm text-slate-400';
+                    newCountElement.id = 'bid-count-display';
+                    newCountElement.textContent = `(${this.bidCount} บิด)`;
+                    priceContainer.appendChild(newCountElement);
+                }
+            }
+        }
+    }
+}
+</script>
+{% endif %}
 {% endblock %}

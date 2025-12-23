@@ -27,6 +27,28 @@
         <a class="text-slate-700 font-medium text-base hover:text-blue-600 transition-colors" href="#">ไลฟ์</a>
       </div>
     </div>
+    
+    <!-- Search Bar -->
+    <div class="flex-1 max-w-md mx-6">
+      <form action="{% url 'products:product_list' %}" method="get" class="relative">
+        <input 
+          type="text" 
+          name="q" 
+          value="{{ request.GET.q|default:'' }}"
+          placeholder="ค้นหาสินค้า..." 
+          class="w-full px-4 py-2 pl-10 pr-4 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+        />
+        <button 
+          type="submit"
+          class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-600 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+        </button>
+      </form>
+    </div>
+    
     <div class="flex items-center gap-2">
       <!-- Notification Dropdown -->
       {% if user.is_authenticated %}
@@ -161,6 +183,15 @@
                 จัดการสินค้าของฉัน
               </a>
 
+              <a href="{% url 'auctions:my_bids' %}"
+                class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                บิดของฉัน
+              </a>
+
               <div class="border-t border-slate-200 mt-2 pt-2">
                 <form action="{% url 'accounts:logout' %}" method="post" class="m-0">
                   {% csrf_token %}
@@ -200,7 +231,7 @@
       {% endfor %}
     </div>
     {% endif %}
-    <div class="max-w-7xl mx-auto px-6 pb-8">{% block content %} {% endblock %}</div>
+    <div class="max-w-7xl mx-auto px-6 pb-8 pt-0">{% block content %} {% endblock %}</div>
   </main>
 
   {% if user.is_authenticated %}

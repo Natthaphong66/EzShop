@@ -8,6 +8,7 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
+from django.db.models import Q
 
 from .forms import ProductForm
 from .models import Product, ProductImage
@@ -45,6 +46,14 @@ class ProductListView(ListView):
         # Base queryset excludes auction products
         qs = Product.objects.exclude(auction__isnull=False)
         
+        # Search functionality (search in name and category only)
+        search_query = self.request.GET.get('q', '').strip()
+        if search_query:
+            qs = qs.filter(
+                Q(name__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+        
         # Filter by category if provided
         category = self.request.GET.get('category')
         if category:
@@ -55,6 +64,7 @@ class ProductListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['selected_category'] = self.request.GET.get('category', '')
+        context['search_query'] = self.request.GET.get('q', '')
         context['categories'] = Product.Category.choices
         return context
 

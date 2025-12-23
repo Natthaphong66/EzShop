@@ -3,7 +3,10 @@
 
 {% block content %}
 <header class="flex justify-between items-center mb-6 mt-2">
-    <h1 class="text-2xl font-bold text-slate-900">สินค้าประมูล</h1>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">การประมูลของฉัน</h1>
+        <p class="text-sm text-slate-500 mt-1">รายการประมูลที่คุณสร้าง</p>
+    </div>
 </header>
 
 {% if auctions %}
@@ -25,8 +28,13 @@
             {% endif %}
 
             <!-- Status Badge -->
-            <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
-                LIVE
+            <div class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold shadow-sm
+                {% if auction.status == 'live' %}bg-red-600 text-white
+                {% elif auction.status == 'ended' %}bg-green-600 text-white
+                {% else %}bg-slate-600 text-white{% endif %}">
+                {% if auction.status == 'live' %}LIVE
+                {% elif auction.status == 'ended' %}ENDED
+                {% else %}{{ auction.get_status_display|upper }}{% endif %}
             </div>
         </div>
         <div class="p-3 flex-1 flex flex-col">
@@ -47,18 +55,47 @@
                     </svg>
                     <span>จบ: {{ auction.end_at|date:"d M H:i" }}</span>
                 </div>
+                <p class="text-xs text-slate-400 mt-1">{{ auction.bids.count }} บิด</p>
             </div>
         </div>
     </a>
     {% endfor %}
 </div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav class="mt-8 flex justify-center gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" 
+       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+        ก่อนหน้า
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-sm font-medium text-slate-700">
+        หน้า {{ page_obj.number }} จาก {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" 
+       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+        ถัดไป
+    </a>
+    {% endif %}
+</nav>
+{% endif %}
+
 {% else %}
-<div class="text-center py-12">
+<div class="text-center py-12 bg-white rounded-xl border border-slate-200">
     <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
     </svg>
-    <p class="text-lg text-slate-500">ยังไม่มีสินค้าประมูล</p>
+    <p class="text-lg text-slate-500 mb-2">ยังไม่มีการประมูล</p>
+    <a href="{% url 'auctions:auction_create' %}" class="text-red-600 hover:text-red-700 font-medium">
+        สร้างการประมูลใหม่
+    </a>
 </div>
 {% endif %}
 {% endblock %}
+

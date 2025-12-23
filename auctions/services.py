@@ -2,6 +2,8 @@
 Service functions สำหรับจัดการหลังจบการประมูล
 """
 from django.urls import reverse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def handle_auction_winner(auction, winner):
@@ -86,4 +88,34 @@ def handle_auction_winner(auction, winner):
         'order': order,
         'chat_room': chat_room,
     }
+
+
+def send_bid_websocket(auction, bid):
+    """Send new bid information via WebSocket to all viewers"""
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            # Refresh auction to get updated bid count
+            auction.refresh_from_db()
+            
+            bid_data = {
+                'id': str(bid.id),
+                'bidder_name': bid.bidder.get_full_name_display(),
+                'bidder_profile_picture': bid.bidder.profile_picture.url if bid.bidder.profile_picture else None,
+                'amount': str(bid.amount),
+                'created_at': bid.created_at.isoformat(),
+                'created_at_display': bid.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+                'current_price': str(bid.amount),
+                'bid_count': auction.bids.count(),
+            }
+            
+            async_to_sync(channel_layer.group_send)(
+                f'auction_{auction.id}',
+                {
+                    'type': 'new_bid',
+                    'bid_data': bid_data
+                }
+            )
+    except Exception as e:
+        print(f"Failed to send bid WebSocket: {e}")
 
