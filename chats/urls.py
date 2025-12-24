@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/room/<uuid:room_id>/messages/', views.GetMessagesView.as_view(), name='get_messages'),
     path('api/room/<uuid:room_id>/send/', views.SendMessageView.as_view(), name='send_message'),
     path('api/room/<uuid:room_id>/mark-read/', views.MarkReadView.as_view(), name='mark_read'),
+    path('api/unread-count/', views.ChatUnreadCountView.as_view(), name='unread_count'),
 ]

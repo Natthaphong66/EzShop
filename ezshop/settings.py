@@ -175,7 +175,9 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = f"EzShop <{EMAIL_HOST_USER}>"
 
-# Payment Settings
-PAYMENT_DEST_ACCOUNT = os.getenv("PAYMENT_DEST_ACCOUNT", "123-4-56789-0")  # ปลายทางบัญชีรับเงิน
+# Stripe Settings
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_...")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # Will be set after creating webhook endpoint
 
 SERVER_EMAIL = EMAIL_HOST_USER

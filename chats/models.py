@@ -46,6 +46,16 @@ class ChatRoom(models.Model):
     def get_unread_count(self, user):
         """Get count of unread messages for a user"""
         return self.messages.filter(is_read=False).exclude(sender=user).count()
+    
+    @staticmethod
+    def get_total_unread_count(user):
+        """Get total count of unread messages across all chat rooms for a user"""
+        # Import here to avoid circular import
+        from chats.models import Message
+        return Message.objects.filter(
+            room__participants=user,
+            is_read=False
+        ).exclude(sender=user).count()
 
 
 class Message(models.Model):

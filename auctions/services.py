@@ -55,7 +55,7 @@ def handle_auction_winner(auction, winner):
 💰 ราคาชนะ: ฿{auction.final_price:,.2f}
 🏆 ผู้ชนะ: {winner.get_full_name_display()}
 
-ึุคุณสามารถชำระเงินได้ในแชทเลยนะ """
+คุณสามารถชำระเงินได้ในแชทเลยนะ """
     
     Message.objects.create(
         room=chat_room,

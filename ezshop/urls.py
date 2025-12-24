@@ -28,6 +28,7 @@ urlpatterns = [
     path("auctions/", include("auctions.urls")),
     path("chats/", include("chats.urls")),
     path("orders/", include("orders.urls")),
+    path("payments/", include("payments.urls")),
     path("notifications/", include("notifications.urls")),
     path("__reload__/", include("django_browser_reload.urls")),
 ]

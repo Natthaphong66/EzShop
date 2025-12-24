@@ -6,8 +6,6 @@ from django.urls import reverse
 
 from .models import Order
 from products.models import Product
-from payments.models import PaymentSlip
-from payments.services import run_soft_verify
 
 
 class CreateOrderView(LoginRequiredMixin, View):
@@ -27,7 +25,6 @@ class CreateOrderView(LoginRequiredMixin, View):
             product=product,
             status__in=[
                 Order.Status.PENDING_PAYMENT,
-                Order.Status.WAITING_SOFT_VERIFY,
                 Order.Status.ESCROW_HELD,
                 Order.Status.SHIPPED,
             ]
@@ -75,64 +72,12 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
         return Order.objects.filter(
             Q(buyer=self.request.user) | Q(seller=self.request.user)
         )
-
-
-class UploadSlipView(LoginRequiredMixin, View):
-    """อัปโหลดสลิปการโอนเงิน"""
     
-    def get(self, request, order_id):
-        order = get_object_or_404(Order, id=order_id, buyer=request.user)
-        
-        # เช็คว่า order อยู่ในสถานะที่อัปโหลดได้
-        if order.status not in [Order.Status.PENDING_PAYMENT, Order.Status.WAITING_SOFT_VERIFY]:
-            messages.error(request, 'ไม่สามารถอัปโหลดสลิปได้ในขณะนี้')
-            return redirect('orders:order_detail', order_id=order_id)
-        
-        context = {
-            'order': order,
-        }
-        return render(request, 'orders/upload_slip.html', context)
-    
-    def post(self, request, order_id):
-        order = get_object_or_404(Order, id=order_id, buyer=request.user)
-        
-        if order.status not in [Order.Status.PENDING_PAYMENT, Order.Status.WAITING_SOFT_VERIFY]:
-            messages.error(request, 'ไม่สามารถอัปโหลดสลิปได้ในขณะนี้')
-            return redirect('orders:order_detail', order_id=order_id)
-        
-        slip_image = request.FILES.get('slip_image')
-        if not slip_image:
-            messages.error(request, 'กรุณาเลือกรูปสลิป')
-            return redirect('orders:upload_slip', order_id=order_id)
-        
-        # ลบสลิปเก่าถ้ามี
-        if hasattr(order, 'payment_slip'):
-            order.payment_slip.delete()
-        
-        # สร้างสลิปใหม่
-        slip = PaymentSlip.objects.create(
-            order=order,
-            image=slip_image,
-        )
-        
-        # อัปเดตสถานะ order
-        order.status = Order.Status.WAITING_SOFT_VERIFY
-        order.save()
-        
-        # รัน soft verify
-        run_soft_verify(slip)
-        
-        # Refresh order เพื่อดูสถานะใหม่
-        order.refresh_from_db()
-        
-        if slip.verify_status == PaymentSlip.VerifyStatus.PASSED:
-            messages.success(request, 'ตรวจสอบสลิปเรียบร้อย! เงินอยู่ในระบบแล้ว')
-        elif slip.verify_status == PaymentSlip.VerifyStatus.MISMATCH:
-            messages.warning(request, f'ข้อมูลไม่ตรงกัน: {slip.verify_message}')
-        else:
-            messages.info(request, 'อัปโหลดสลิปเรียบร้อย รอตรวจสอบ')
-        
-        return redirect('orders:order_detail', order_id=order_id)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.conf import settings
+        context['STRIPE_PUBLISHABLE_KEY'] = settings.STRIPE_PUBLISHABLE_KEY
+        return context
 
 
 class MyOrdersView(LoginRequiredMixin, ListView):
@@ -162,7 +107,7 @@ class CancelOrderView(LoginRequiredMixin, View):
         order = get_object_or_404(Order, id=order_id, buyer=request.user)
         
         # เช็คว่า order อยู่ในสถานะที่ยกเลิกได้
-        if order.status not in [Order.Status.PENDING_PAYMENT, Order.Status.WAITING_SOFT_VERIFY]:
+        if order.status != Order.Status.PENDING_PAYMENT:
             messages.error(request, 'ไม่สามารถยกเลิกคำสั่งซื้อได้ในขณะนี้')
             return redirect('orders:order_detail', order_id=order_id)
         

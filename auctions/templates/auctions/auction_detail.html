@@ -242,7 +242,7 @@
         <h2 class="text-2xl font-bold text-slate-900 mb-6">ประวัติการบิด</h2>
         
         <div class="space-y-3 max-h-96 overflow-y-auto" id="bidHistoryList">
-            <template x-for="bid in bidHistory" :key="bid.id">
+            <template x-for="bid in sortedBidHistory" :key="bid.id">
                 <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm"
@@ -261,7 +261,7 @@
                     </div>
                 </div>
             </template>
-            <div x-show="bidHistory.length === 0" class="text-center py-8 text-slate-500">
+            <div x-show="sortedBidHistory.length === 0" class="text-center py-8 text-slate-500">
                 <p>ยังไม่มีการบิด</p>
             </div>
         </div>
@@ -287,6 +287,16 @@ function bidHistory(auctionId, initialPrice, initialCount) {
         currentPrice: initialPrice,
         bidCount: initialCount,
         
+        // Computed property to get sorted bid history (newest first)
+        sortedBidHistory() {
+            return [...this.bidHistory].sort((a, b) => {
+                // Sort by created_at descending (newest first)
+                const dateA = new Date(a.created_at);
+                const dateB = new Date(b.created_at);
+                return dateB - dateA;
+            });
+        },
+        
         init() {
             this.connectWebSocket();
             this.loadBidHistory();
@@ -308,10 +318,28 @@ function bidHistory(auctionId, initialPrice, initialCount) {
                 const data = JSON.parse(event.data);
                 
                 if (data.type === 'bid_history') {
-                    this.bidHistory = data.data;
+                    // Sort bid history by created_at descending (newest first)
+                    this.bidHistory = data.data.sort((a, b) => {
+                        const dateA = new Date(a.created_at);
+                        const dateB = new Date(b.created_at);
+                        return dateB - dateA;
+                    });
                 } else if (data.type === 'new_bid') {
-                    // Add new bid to the top of the list
-                    this.bidHistory.unshift(data.data);
+                    // Add new bid to the list and sort
+                    // Check if bid already exists (avoid duplicates)
+                    const existingIndex = this.bidHistory.findIndex(b => b.id === data.data.id);
+                    if (existingIndex === -1) {
+                        this.bidHistory.push(data.data);
+                    } else {
+                        // Update existing bid
+                        this.bidHistory[existingIndex] = data.data;
+                    }
+                    // Sort by created_at descending (newest first)
+                    this.bidHistory.sort((a, b) => {
+                        const dateA = new Date(a.created_at);
+                        const dateB = new Date(b.created_at);
+                        return dateB - dateA;
+                    });
                     // Update current price and bid count
                     this.currentPrice = parseFloat(data.data.current_price);
                     this.bidCount = data.data.bid_count;
@@ -349,7 +377,12 @@ function bidHistory(auctionId, initialPrice, initialCount) {
                 const response = await fetch(`/auctions/api/${this.auctionId}/bids/`);
                 const data = await response.json();
                 if (data.success) {
-                    this.bidHistory = data.bids;
+                    // Sort bid history by created_at descending (newest first)
+                    this.bidHistory = data.bids.sort((a, b) => {
+                        const dateA = new Date(a.created_at);
+                        const dateB = new Date(b.created_at);
+                        return dateB - dateA;
+                    });
                 }
             } catch (error) {
                 console.error('Failed to load bid history:', error);

@@ -280,3 +280,16 @@ class MarkReadView(LoginRequiredMixin, View):
         ).update(is_read=True)
         
         return JsonResponse({'success': True, 'marked_read': updated})
+
+
+class ChatUnreadCountView(LoginRequiredMixin, View):
+    """API endpoint to get total unread chat messages count"""
+    
+    def get(self, request):
+        from .models import ChatRoom
+        unread_count = ChatRoom.get_total_unread_count(request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count
+        })
