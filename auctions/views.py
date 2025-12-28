@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.db import transaction
 from django.contrib import messages
+from django.http import JsonResponse
 from decimal import Decimal
 
 from .models import Auction, Bid
@@ -112,7 +113,7 @@ class PlaceBidView(LoginRequiredMixin, View):
         
         # Validation 1: Check if user is not the seller
         if request.user == auction.seller:
-            messages.error(request, '❌ คุณไม่สามารถบิดสินค้าของตัวเองได้')
+            messages.error(request, 'คุณไม่สามารถบิดสินค้าของตัวเองได้')
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Validation 2: Check auction status is LIVE
@@ -121,14 +122,14 @@ class PlaceBidView(LoginRequiredMixin, View):
         if auction.status != Auction.Status.LIVE or auction.end_at <= timezone.now():
             if auction.status == Auction.Status.LIVE:
                 auction.close_auction() # Close it if it should be closed
-            messages.error(request, '❌ การประมูลนี้จบลงแล้ว')
+            messages.error(request, 'การประมูลนี้จบลงแล้ว')
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Get bid amount from form
         try:
             bid_amount = Decimal(request.POST.get('amount', 0))
         except:
-            messages.error(request, '❌ กรุณาระบุราคาที่ถูกต้อง')
+            messages.error(request, 'กรุณาระบุราคาที่ถูกต้อง')
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Calculate minimum required bid
@@ -139,7 +140,7 @@ class PlaceBidView(LoginRequiredMixin, View):
         if bid_amount < min_required_bid:
             messages.error(
                 request, 
-                f'❌ ราคาต้องสูงกว่าราคาปัจจุบัน! ราคาขั้นต่ำคือ ฿ {min_required_bid:,.2f}'
+                f'ราคาต้องสูงกว่าราคาปัจจุบัน! ราคาขั้นต่ำคือ ฿ {min_required_bid:,.2f}'
             )
             return redirect('auctions:auction_detail', pk=auction.pk)
         

@@ -53,7 +53,7 @@ def notify_auction_won(auction, winner):
     notification = Notification.create_notification(
         user=winner,
         notification_type=Notification.NotificationType.AUCTION_WON,
-        title='🎉 ยินดีด้วย! คุณชนะการประมูล',
+        title='ยินดีด้วย! คุณชนะการประมูล',
         message=f'คุณชนะการประมูล "{auction.product.name}" ด้วยราคา ฿{auction.final_price:,.2f}',
         link=reverse('auctions:auction_detail', args=[str(auction.id)]),
         auction=auction
@@ -66,7 +66,7 @@ def notify_outbid(auction, previous_bidder, new_amount):
     notification = Notification.create_notification(
         user=previous_bidder,
         notification_type=Notification.NotificationType.AUCTION_OUTBID,
-        title='⚠️ มีคนบิดแซงคุณแล้ว!',
+        title='มีคนบิดแซงคุณแล้ว!',
         message=f'มีคนเสนอราคา ฿{new_amount:,.2f} สำหรับ "{auction.product.name}" บิดกลับเลย!',
         link=reverse('auctions:auction_detail', args=[str(auction.id)]),
         auction=auction
@@ -79,7 +79,7 @@ def notify_auction_ending_soon(auction, bidder):
     Notification.create_notification(
         user=bidder,
         notification_type=Notification.NotificationType.AUCTION_ENDING,
-        title='⏰ ประมูลใกล้จบแล้ว!',
+        title='ประมูลใกล้จบแล้ว!',
         message=f'การประมูล "{auction.product.name}" กำลังจะสิ้นสุดเร็วๆ นี้',
         link=reverse('auctions:auction_detail', args=[str(auction.id)]),
         auction=auction
@@ -91,7 +91,7 @@ def notify_new_order(order):
     notification = Notification.create_notification(
         user=order.seller,
         notification_type=Notification.NotificationType.ORDER_CREATED,
-        title='🛒 มีคำสั่งซื้อใหม่!',
+        title='มีคำสั่งซื้อใหม่!',
         message=f'คุณมีคำสั่งซื้อใหม่สำหรับ "{order.product.name}" จำนวน ฿{order.amount:,.2f}',
         link=reverse('orders:order_detail', args=[str(order.id)]),
         order=order
@@ -104,7 +104,7 @@ def notify_order_paid(order):
     Notification.create_notification(
         user=order.seller,
         notification_type=Notification.NotificationType.ORDER_PAID,
-        title='💰 ได้รับการชำระเงินแล้ว!',
+        title='ได้รับการชำระเงินแล้ว!',
         message=f'คำสั่งซื้อ "{order.product.name}" ได้รับการชำระเงินแล้ว กรุณาจัดส่งสินค้า',
         link=reverse('orders:order_detail', args=[str(order.id)]),
         order=order
@@ -116,7 +116,7 @@ def notify_order_shipped(order):
     Notification.create_notification(
         user=order.buyer,
         notification_type=Notification.NotificationType.ORDER_SHIPPED,
-        title='📦 สินค้าถูกจัดส่งแล้ว!',
+        title='สินค้าถูกจัดส่งแล้ว!',
         message=f'คำสั่งซื้อ "{order.product.name}" ถูกจัดส่งแล้ว',
         link=reverse('orders:order_detail', args=[str(order.id)]),
         order=order

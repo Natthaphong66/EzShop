@@ -19,15 +19,6 @@ def handle_auction_winner(auction, winner):
     from notifications.services import notify_auction_won
     from notifications.models import Notification
     
-    # 1. สร้าง Order อัตโนมัติ
-    order = Order.objects.create(
-        buyer=winner,
-        seller=auction.seller,
-        product=auction.product,
-        amount=auction.final_price,
-        status=Order.Status.PENDING_PAYMENT,
-    )
-    
     # 2. สร้าง ChatRoom (ถ้ายังไม่มี)
     # หา ChatRoom ที่มีอยู่แล้วระหว่าง 2 คนนี้สำหรับ auction นี้
     existing_room = ChatRoom.objects.filter(
@@ -40,6 +31,30 @@ def handle_auction_winner(auction, winner):
     
     if existing_room:
         chat_room = existing_room
+        
+        # เช็คว่าเคยส่ง welcome message ไปแล้วหรือยัง (ป้องกันการส่งซ้ำ)
+        welcome_message_prefix = "ยินดีด้วย! การประมูลสิ้นสุดแล้ว"
+        existing_welcome_message = Message.objects.filter(
+            room=chat_room,
+            sender=auction.seller,
+            content__startswith=welcome_message_prefix
+        ).first()
+        
+        if existing_welcome_message:
+            # ถ้าเคยส่ง welcome message ไปแล้ว แสดงว่าเคยเรียก function นี้แล้ว
+            # หา Order ที่เกี่ยวข้อง
+            existing_order = Order.objects.filter(
+                buyer=winner,
+                seller=auction.seller,
+                product=auction.product,
+                amount=auction.final_price,
+                status=Order.Status.PENDING_PAYMENT
+            ).order_by('-created_at').first()
+            
+            return {
+                'order': existing_order,
+                'chat_room': chat_room,
+            }
     else:
         # สร้าง ChatRoom ใหม่
         chat_room = ChatRoom.objects.create(
@@ -48,12 +63,21 @@ def handle_auction_winner(auction, winner):
         )
         chat_room.participants.add(winner, auction.seller)
     
+    # 1. สร้าง Order อัตโนมัติ
+    order = Order.objects.create(
+        buyer=winner,
+        seller=auction.seller,
+        product=auction.product,
+        amount=auction.final_price,
+        status=Order.Status.PENDING_PAYMENT,
+    )
+    
     # 3. ส่ง Welcome Message (System Message)
-    welcome_message = f"""🎉 ยินดีด้วย! การประมูลสิ้นสุดแล้ว
+    welcome_message = f"""ยินดีด้วย! การประมูลสิ้นสุดแล้ว
 
-📦 สินค้า: {auction.product.name}
-💰 ราคาชนะ: ฿{auction.final_price:,.2f}
-🏆 ผู้ชนะ: {winner.get_full_name_display()}
+สินค้า: {auction.product.name}
+ราคาชนะ: ฿{auction.final_price:,.2f}
+ผู้ชนะ: {winner.get_full_name_display()}
 
 คุณสามารถชำระเงินได้ในแชทเลยนะ """
     
@@ -73,7 +97,7 @@ def handle_auction_winner(auction, winner):
     seller_notification = Notification.create_notification(
         user=auction.seller,
         notification_type=Notification.NotificationType.ORDER_CREATED,
-        title='🎉 การประมูลจบแล้ว! มีผู้ชนะ',
+        title='การประมูลจบแล้ว! มีผู้ชนะ',
         message=f'การประมูล "{auction.product.name}" จบลงแล้ว ผู้ชนะคือ {winner.get_full_name_display()} ด้วยราคา ฿{auction.final_price:,.2f}',
         link=chat_url,
         auction=auction,

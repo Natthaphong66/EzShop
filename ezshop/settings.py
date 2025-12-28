@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'orders',
     'payments',
     'notifications',
+    'live',
 ]
 
 
@@ -179,5 +180,9 @@ DEFAULT_FROM_EMAIL = f"EzShop <{EMAIL_HOST_USER}>"
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_...")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # Will be set after creating webhook endpoint
+
+# Agora Settings (Free Tier)
+AGORA_APP_ID = os.getenv("AGORA_APP_ID", "")
+AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "")
 
 SERVER_EMAIL = EMAIL_HOST_USER

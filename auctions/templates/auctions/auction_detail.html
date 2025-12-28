@@ -147,12 +147,12 @@
             <!-- Bidding Section -->
             {% if auction.status == 'ended' %}
             <div class="bg-slate-100 p-6 rounded-xl text-center mb-6">
-                <h3 class="text-xl font-bold text-slate-900 mb-2">🏁 การประมูลจบลงแล้ว</h3>
+                <h3 class="text-xl font-bold text-slate-900 mb-2">การประมูลจบลงแล้ว</h3>
                 <p class="text-slate-600 mb-4">จบเมื่อ: {{ auction.ended_at|date:"d M Y, H:i" }}</p>
 
                 {% if auction.winner_bid %}
                 <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
-                    <p class="text-green-800 font-semibold">🏆 ผู้ชนะ: {{ auction.winner_bid.bidder.first_name }}
+                    <p class="text-green-800 font-semibold">ผู้ชนะ: {{ auction.winner_bid.bidder.first_name }}
                         {{auction.winner_bid.bidder.last_name }}</p>
                     <p class="text-green-600">ราคาจบประมูล: ฿ {{ auction.final_price|intcomma }}</p>
                 </div>
