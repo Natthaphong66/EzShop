@@ -1,314 +1,203 @@
-{% extends "base.html" %}
-{% load humanize %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
 
-{% block extra_head %}
-{% if stream.status == 'live' and agora_app_id %}
-<!-- Agora RTC SDK -->
-<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
-{% endif %}
-{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <title>{{ stream.title }}</title>
 
-{% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ stream.title }}</h1>
-        <p class="text-slate-600">{{ stream.host.get_full_name_display }}</p>
-        {% if stream.started_at %}
-        <p class="text-sm text-slate-400 mt-1">เริ่มเมื่อ {{ stream.started_at|timesince }} ที่แล้ว</p>
-        {% endif %}
-    </div>
+    <!-- Agora SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js"></script>
 
-    {% if stream.status == 'live' and agora_app_id %}
-    <!-- Live Streaming Player -->
-    <div class="bg-black rounded-xl overflow-hidden mb-6" 
-         x-data="agoraLiveStream('{{ stream.id }}', '{{ agora_app_id }}', '{{ stream.channel_name }}', {% if user.is_authenticated %}'{{ user.id }}'{% else %}null{% endif %}, {% if user.is_authenticated and user == stream.host %}true{% else %}false{% endif %})" 
-         x-init="setTimeout(() => init(), 1000)">
-        <div class="aspect-video relative">
-            <!-- Video Player Container -->
-            <div id="agora-video-container" class="w-full h-full relative">
-                <!-- Local Video (Publisher) -->
-                <div id="local-video" class="w-full h-full"></div>
-                <!-- Remote Video (Subscribers) -->
-                <div id="remote-video-container" class="absolute top-4 right-4 w-64 h-48"></div>
-                
-                <!-- Loading State -->
-                <div x-show="isLoading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
-                    <div class="text-white text-center">
-                        <svg class="animate-spin h-8 w-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <p>กำลังเชื่อมต่อ...</p>
-                    </div>
-                </div>
-                
-                <!-- Error State -->
-                <div x-show="error" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
-                    <div class="text-white text-center p-4">
-                        <p class="text-red-400 mb-2" x-text="error"></p>
-                        <button @click="joinChannel()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                            ลองใหม่
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Live Badge -->
-            <div class="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-sm animate-pulse z-10">
-                LIVE
-            </div>
-            
-            <!-- Controls -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10" x-show="!isLoading && !error">
-                <template x-if="isPublisher">
-                    <button @click="toggleVideo()" 
-                            class="bg-white bg-opacity-20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all"
-                            :class="videoEnabled ? '' : 'bg-red-600'">
-                        <span x-show="videoEnabled">📹</span>
-                        <span x-show="!videoEnabled">📵</span>
-                    </button>
-                </template>
-                <template x-if="isPublisher">
-                    <button @click="toggleAudio()" 
-                            class="bg-white bg-opacity-20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-all"
-                            :class="audioEnabled ? '' : 'bg-red-600'">
-                        <span x-show="audioEnabled">🎤</span>
-                        <span x-show="!audioEnabled">🔇</span>
-                    </button>
-                </template>
-                {% if user == stream.host %}
-                <form method="post" action="{% url 'live:stream_end' stream.pk %}" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all">
-                        หยุดไลฟ์
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Info -->
-        <div class="p-4 bg-slate-900 text-white">
-            <template x-if="isPublisher">
-                <p class="text-center">คุณกำลังถ่ายทอดสด</p>
-            </template>
-            <template x-if="!isPublisher">
-                <p class="text-center">กำลังดูการถ่ายทอดสด</p>
-            </template>
-        </div>
-    </div>
-    {% elif stream.status == 'ended' %}
-    <div class="bg-slate-100 rounded-xl p-8 text-center mb-6">
-        <p class="text-slate-600 text-lg">ไลฟ์สตรีมนี้จบลงแล้ว</p>
-        {% if stream.ended_at %}
-        <p class="text-slate-400 mt-2">จบเมื่อ {{ stream.ended_at|timesince }} ที่แล้ว</p>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- Description -->
-    {% if stream.description %}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-        <h2 class="text-xl font-bold text-slate-900 mb-4">คำอธิบาย</h2>
-        <p class="text-slate-700 whitespace-pre-wrap">{{ stream.description }}</p>
-    </div>
-    {% endif %}
-</div>
-
-{% if stream.status == 'live' and agora_app_id %}
-<script>
-function agoraLiveStream(streamId, appId, channelName, userId, isPublisher) {
-    return {
-        streamId: streamId,
-        appId: appId,
-        channelName: channelName,
-        userId: userId,
-        isPublisher: isPublisher,
-        client: null,
-        localVideoTrack: null,
-        localAudioTrack: null,
-        remoteUsers: {},
-        isLoading: true,
-        error: null,
-        videoEnabled: true,
-        audioEnabled: true,
-        
-        async init() {
-            // Check if Agora App ID is configured
-            if (!this.appId) {
-                this.error = 'Agora App ID ยังไม่ได้ตั้งค่า';
-                this.isLoading = false;
-                return;
-            }
-            
-            // Wait for Agora SDK to load (up to 5 seconds)
-            let attempts = 0;
-            const maxAttempts = 50;
-            
-            while (!window.AgoraRTC && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            if (!window.AgoraRTC) {
-                this.error = 'ไม่สามารถโหลด Agora SDK ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
-                this.isLoading = false;
-                return;
-            }
-            
-            if (!this.userId) {
-                this.error = 'กรุณาเข้าสู่ระบบเพื่อดูการถ่ายทอดสด';
-                this.isLoading = false;
-                return;
-            }
-            
-            await this.joinChannel();
-        },
-        
-        async joinChannel() {
-            try {
-                this.isLoading = true;
-                this.error = null;
-                
-                // Get token from backend
-                const tokenResponse = await fetch(`/live/api/${this.streamId}/token/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCookie('csrftoken')
-                    }
-                });
-                
-                const tokenData = await tokenResponse.json();
-                console.log('Token response:', tokenData);
-                
-                if (!tokenData.success) {
-                    throw new Error(tokenData.error || 'ไม่สามารถสร้าง token ได้');
-                }
-                
-                // Check if app_id is provided
-                if (!tokenData.app_id || tokenData.app_id.trim() === '') {
-                    throw new Error('App ID ไม่ถูกส่งมาจาก server กรุณาตรวจสอบการตั้งค่า AGORA_APP_ID ใน .env และ restart Django server');
-                }
-                
-                console.log('Joining channel with App ID:', tokenData.app_id);
-                console.log('Channel name:', tokenData.channel_name);
-                console.log('Token:', tokenData.token ? tokenData.token.substring(0, 50) + '...' : 'No token');
-                
-                // Create Agora client
-                this.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-                
-                // Event handlers
-                this.client.on("user-published", async (user, mediaType) => {
-                    await this.client.subscribe(user, mediaType);
-                    if (mediaType === "video") {
-                        this.setupRemoteVideo(user);
-                    }
-                    if (mediaType === "audio") {
-                        user.audioTrack.play();
-                    }
-                });
-                
-                this.client.on("user-unpublished", (user, mediaType) => {
-                    if (mediaType === "video") {
-                        this.removeRemoteVideo(user);
-                    }
-                });
-                
-                // Join channel with numeric UID
-                const uid = await this.client.join(
-                    tokenData.app_id,
-                    tokenData.channel_name,
-                    tokenData.token,
-                    parseInt(tokenData.uid)
-                );
-                
-                console.log("Joined channel with UID:", uid);
-                
-                // If publisher, create and publish tracks
-                if (this.isPublisher && tokenData.role === 'publisher') {
-                    // Create video track
-                    this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
-                    this.localVideoTrack.play("local-video");
-                    
-                    // Create audio track
-                    this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                    
-                    // Publish tracks
-                    await this.client.publish([this.localVideoTrack, this.localAudioTrack]);
-                    console.log("Published local tracks");
-                }
-                
-                this.isLoading = false;
-            } catch (error) {
-                console.error("Error joining channel:", error);
-                this.error = error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
-                this.isLoading = false;
-            }
-        },
-        
-        setupRemoteVideo(user) {
-            const remoteContainer = document.getElementById("remote-video-container");
-            if (!remoteContainer) return;
-            
-            const playerContainer = document.createElement("div");
-            playerContainer.id = `remote-${user.uid}`;
-            playerContainer.className = "w-full h-full rounded-lg overflow-hidden";
-            remoteContainer.appendChild(playerContainer);
-            
-            user.videoTrack.play(`remote-${user.uid}`);
-            this.remoteUsers[user.uid] = user;
-        },
-        
-        removeRemoteVideo(user) {
-            const playerContainer = document.getElementById(`remote-${user.uid}`);
-            if (playerContainer) {
-                playerContainer.remove();
-            }
-            delete this.remoteUsers[user.uid];
-        },
-        
-        async toggleVideo() {
-            if (this.localVideoTrack) {
-                if (this.videoEnabled) {
-                    await this.localVideoTrack.setEnabled(false);
-                    this.videoEnabled = false;
-                } else {
-                    await this.localVideoTrack.setEnabled(true);
-                    this.videoEnabled = true;
-                }
-            }
-        },
-        
-        async toggleAudio() {
-            if (this.localAudioTrack) {
-                if (this.audioEnabled) {
-                    await this.localAudioTrack.setEnabled(false);
-                    this.audioEnabled = false;
-                } else {
-                    await this.localAudioTrack.setEnabled(true);
-                    this.audioEnabled = true;
-                }
-            }
-        },
-        
-        getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
+    <style>
+        /* ===== Live Video Layout ===== */
+        #agora-live-container {
+            width: 100%;
+            min-height: 480px;
+            position: relative;
+            background: #000;
+            overflow: hidden;
         }
-    }
-}
-</script>
-{% endif %}
-{% endblock %}
 
+        #local-player {
+            width: 100%;
+            height: 480px;
+            position: relative;
+            background: #000;
+        }
+
+        /* สำคัญมาก: บังคับขนาด video */
+        #local-player video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            background: #000;
+        }
+
+        .live-controls {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .live-controls button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>{{ stream.title }}</h2>
+
+    <div id="agora-live-container">
+        <div id="local-player"></div>
+
+        {% if user == stream.host %}
+        <div class="live-controls">
+            <button onclick="toggleCamera()">📷 เปิด/ปิดกล้อง</button>
+            <button onclick="toggleMic()">🎤 เปิด/ปิดไมค์</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===== Agora Script ===== -->
+    <script>
+        /* ===============================
+           Initial Variables (SAFE)
+        ================================ */
+        const isHost = {% if user == stream.host %}true{% else %} false{% endif %};
+        const channelName = "{{ stream.channel_name|escapejs }}";
+        const userUid = "{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}";
+        // ✅ CSRF token ต้องประกาศก่อนใช้งาน
+        const csrfToken = "{{ csrf_token }}";
+
+        console.log("Init:", { isHost, channelName, userUid });
+
+        /* ===============================
+           Agora Global State
+        ================================ */
+        let client = null;
+        let localTracks = {
+            videoTrack: null,
+            audioTrack: null
+        };
+
+        /* ===============================
+           Utils
+        ================================ */
+        async function getDroidCamDeviceId() {
+            const cameras = await AgoraRTC.getCameras();
+            console.log("Available cameras:", cameras);
+
+            const cam = cameras.find(c =>
+                c.label && c.label.toLowerCase().includes("droidcam")
+            );
+
+            if (!cam) {
+                throw new Error("❌ ไม่พบ DroidCam กรุณาเปิด DroidCam ก่อน");
+            }
+
+            console.log("🎥 Using camera:", cam.label);
+            return cam.deviceId;
+        }
+
+        async function fetchAgoraToken() {
+            const res = await fetch("/live/api/token/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    channel_name: channelName,
+                    uid: userUid,
+                    role: isHost ? 1 : 2
+                })
+            });
+
+
+            if (!res.ok) {
+                throw new Error("Token API error");
+            }
+
+            return res.json();
+        }
+
+        /* ===============================
+           Init Agora
+        ================================ */
+        async function initAgora() {
+            console.log("🔥 initAgora START");
+
+            const tokenData = await fetchAgoraToken();
+
+            client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+            await client.join(
+                tokenData.app_id,
+                channelName,
+                tokenData.token,
+                userUid
+            );
+
+            console.log("✅ Joined channel");
+
+            if (isHost) {
+                const cameraId = await getDroidCamDeviceId();
+
+                localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
+                    cameraId,
+                    encoderConfig: "480p_1"
+                });
+
+                await client.publish([
+                    localTracks.audioTrack,
+                    localTracks.videoTrack
+                ]);
+
+                console.log("📡 Published tracks");
+
+                localTracks.videoTrack.play("local-player");
+            }
+        }
+
+        /* ===============================
+           Controls
+        ================================ */
+        function toggleCamera() {
+            if (localTracks.videoTrack) {
+                const enabled = localTracks.videoTrack.isEnabled;
+                localTracks.videoTrack.setEnabled(!enabled);
+            }
+        }
+
+        function toggleMic() {
+            if (localTracks.audioTrack) {
+                const enabled = localTracks.audioTrack.isEnabled;
+                localTracks.audioTrack.setEnabled(!enabled);
+            }
+        }
+
+        /* ===============================
+           Start
+        ================================ */
+        window.addEventListener("load", () => {
+            initAgora().catch(err => {
+                console.error("❌ Agora error:", err);
+                alert(err.message);
+            });
+        });
+    </script>
+
+</body>
+
+</html>

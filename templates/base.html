@@ -25,39 +25,35 @@
       <div class="flex items-center gap-8 ml-12">
         <a class="text-slate-700 font-medium text-base hover:text-blue-600 transition-colors"
           href="{% url 'auctions:auction_list' %}">ประมูล</a>
-        <a class="text-slate-700 font-medium text-base hover:text-blue-600 transition-colors" href="{% url 'live:stream_list' %}">ไลฟ์</a>
+        <a class="text-slate-700 font-medium text-base hover:text-blue-600 transition-colors"
+          href="{% url 'live:stream_list' %}">ไลฟ์</a>
       </div>
     </div>
-    
+
     <!-- Search Bar -->
     <div class="flex-1 max-w-md mx-6">
       <form action="{% url 'products:product_list' %}" method="get" class="relative">
-        <input 
-          type="text" 
-          name="q" 
-          value="{{ request.GET.q|default:'' }}"
-          placeholder="ค้นหาสินค้า..." 
-          class="w-full px-4 py-2 pl-10 pr-4 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-        />
-        <button 
-          type="submit"
-          class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-600 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="ค้นหาสินค้า..."
+          class="w-full px-4 py-2 pl-10 pr-4 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+        <button type="submit"
+          class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-600 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
           </svg>
         </button>
       </form>
     </div>
-    
+
     <div class="flex items-center gap-2">
       <!-- Notification Dropdown -->
       {% if user.is_authenticated %}
       <div class="relative" x-data="notificationDropdown()" @click.away="open = false">
         <button @click="toggleDropdown()" title="การแจ้งเตือน"
           class="h-20 px-3 flex items-center justify-center text-red-600 hover:bg-slate-100 transition-colors relative">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-            class="size-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="size-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" />
           </svg>
@@ -77,26 +73,31 @@
               อ่านทั้งหมด
             </button>
           </div>
-          
+
           <div class="max-h-80 overflow-y-auto">
             <template x-if="loading">
               <div class="py-8 text-center text-slate-400">
                 <svg class="animate-spin h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                  </path>
                 </svg>
               </div>
             </template>
-            
+
             <template x-if="!loading && notifications.length === 0">
               <div class="py-8 text-center">
-                <svg class="w-12 h-12 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                <svg class="w-12 h-12 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                  </path>
                 </svg>
                 <p class="text-sm text-slate-500">ไม่มีการแจ้งเตือน</p>
               </div>
             </template>
-            
+
             <template x-for="notification in notifications" :key="notification.id">
               <a :href="notification.link || '#'" @click="markRead(notification.id)"
                 class="block px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50"
@@ -111,8 +112,8 @@
               </a>
             </template>
           </div>
-          
-          <a href="{% url 'notifications:list' %}" 
+
+          <a href="{% url 'notifications:list' %}"
             class="block px-4 py-3 text-center text-sm text-red-600 hover:bg-slate-50 border-t border-slate-100">
             ดูทั้งหมด
           </a>
@@ -132,8 +133,8 @@
       <div class="relative" x-data="chatUnreadBadge()" x-init="init()">
         <a href="{% url 'chats:room_list' %}" title="แชท"
           class="h-20 px-3 flex items-center justify-center text-red-600 hover:bg-slate-100 transition-colors relative">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-            class="w-6 h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
           </svg>
@@ -205,7 +206,8 @@
                 class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                  </path>
                 </svg>
                 บิดของฉัน
               </a>
@@ -261,28 +263,28 @@
         unreadCount: 0,
         notifications: [],
         websocket: null,
-        
+
         init() {
           this.connectWebSocket();
           // Fetch initial notifications
           this.fetchNotifications();
         },
-        
+
         connectWebSocket() {
           const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
           const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
-          
+
           this.websocket = new WebSocket(wsUrl);
-          
+
           this.websocket.onopen = () => {
             console.log('Notifications WebSocket connected');
             // Request latest notifications
             this.websocket.send(JSON.stringify({ type: 'get_notifications' }));
           };
-          
+
           this.websocket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            
+
             if (data.type === 'unread_count') {
               this.unreadCount = data.count;
             } else if (data.type === 'notifications') {
@@ -297,17 +299,17 @@
               this.unreadCount = data.unread_count;
             }
           };
-          
+
           this.websocket.onerror = (error) => {
             console.error('Notifications WebSocket error:', error);
           };
-          
+
           this.websocket.onclose = () => {
             console.log('Notifications WebSocket disconnected, reconnecting...');
             setTimeout(() => this.connectWebSocket(), 3000);
           };
         },
-        
+
         toggleDropdown() {
           this.open = !this.open;
           if (this.open) {
@@ -318,7 +320,7 @@
             }
           }
         },
-        
+
         async fetchNotifications() {
           try {
             const response = await fetch('/notifications/api/dropdown/');
@@ -329,7 +331,7 @@
             console.error('Failed to fetch notifications:', error);
           }
         },
-        
+
         async markRead(id) {
           try {
             await fetch(`/notifications/api/mark-read/${id}/`, {
@@ -350,7 +352,7 @@
             console.error('Failed to mark as read:', error);
           }
         },
-        
+
         async markAllRead() {
           try {
             await fetch('/notifications/api/mark-all-read/', {
@@ -368,17 +370,17 @@
         }
       }
     }
-    
+
     function chatUnreadBadge() {
       return {
         unreadCount: 0,
-        
+
         init() {
           this.fetchUnreadCount();
           // Refresh every 30 seconds
           setInterval(() => this.fetchUnreadCount(), 30000);
         },
-        
+
         async fetchUnreadCount() {
           try {
             const response = await fetch('/chats/api/unread-count/');

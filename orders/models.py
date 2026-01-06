@@ -43,6 +43,11 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Shipping information
+    tracking_number = models.CharField(max_length=100, blank=True, null=True, verbose_name='เลขพัสดุ')
+    shipping_carrier = models.CharField(max_length=100, blank=True, null=True, verbose_name='บริษัทขนส่ง')
+    shipped_at = models.DateTimeField(blank=True, null=True, verbose_name='วันที่จัดส่ง')
+    
     class Meta:
         ordering = ['-created_at']
         indexes = [

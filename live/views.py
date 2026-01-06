@@ -6,10 +6,13 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.conf import settings
 from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 import uuid
+import json
 
 from .models import LiveStream
-from .agora_service import RtcTokenBuilder
+from .agora_utils import generate_agora_token
 
 
 class LiveStreamListView(ListView):
@@ -32,11 +35,22 @@ class LiveStreamDetailView(DetailView):
     context_object_name = 'stream'
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Only pass app_id if it's set (not empty)
-        app_id = settings.AGORA_APP_ID
-        context['agora_app_id'] = app_id if app_id else None
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            # Pass Agora credentials
+            app_id = getattr(settings, 'AGORA_APP_ID', None)
+            app_certificate = getattr(settings, 'AGORA_APP_CERTIFICATE', None)
+            context['agora_app_id'] = app_id if app_id else None
+            context['agora_app_certificate'] = app_certificate if app_certificate else None
+            
+            return context
+        except Exception as e:
+            # If there's any error, still return basic context
+            context = super().get_context_data(**kwargs)
+            context['agora_app_id'] = None
+            context['agora_app_certificate'] = None
+            print(f"Error in get_context_data: {e}")
+            return context
 
 
 class LiveStreamCreateView(LoginRequiredMixin, CreateView):
@@ -69,75 +83,6 @@ class LiveStreamEndView(LoginRequiredMixin, View):
         return redirect('live:stream_list')
 
 
-class AgoraTokenView(LoginRequiredMixin, View):
-    """Generate Agora RTC token for joining live stream"""
-    
-    def post(self, request, pk):
-        stream = get_object_or_404(LiveStream, pk=pk)
-        
-        # Check if stream is live
-        if stream.status != LiveStream.Status.LIVE:
-            return JsonResponse({
-                'error': 'Stream is not live'
-            }, status=400)
-        
-        # Determine role: host is publisher, others are subscribers
-        role = "publisher" if request.user == stream.host else "subscriber"
-        
-        # Generate token
-        try:
-            # Check if App ID is configured
-            app_id = settings.AGORA_APP_ID
-            app_cert = settings.AGORA_APP_CERTIFICATE
-            
-            # Debug logging (remove in production)
-            print(f"DEBUG: AGORA_APP_ID = {app_id[:10]}..." if app_id and len(app_id) > 10 else f"DEBUG: AGORA_APP_ID = {app_id}")
-            print(f"DEBUG: AGORA_APP_ID full length = {len(app_id) if app_id else 0}")
-            print(f"DEBUG: AGORA_APP_CERTIFICATE = {'Set' if app_cert else 'Not set'}")
-            print(f"DEBUG: Channel name = {stream.channel_name}")
-            
-            if not app_id or app_id.strip() == '':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'AGORA_APP_ID ไม่ได้ตั้งค่า กรุณาเพิ่มใน .env file และ restart Django server'
-                }, status=400)
-            
-            if not app_cert or app_cert.strip() == '':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'AGORA_APP_CERTIFICATE ไม่ได้ตั้งค่า กรุณาเพิ่มใน .env file และ restart Django server'
-                }, status=400)
-            
-            # Use numeric UID (user ID as integer)
-            # Convert user ID to integer for numeric UID (max 2^31 - 1)
-            uid = int(request.user.id) & 0x7FFFFFFF  # Ensure positive integer
-            
-            from .agora_service import RtcTokenBuilder
-            import time
-            expire_timestamp = int(timezone.now().timestamp()) + 3600
-            
-            token = RtcTokenBuilder.buildTokenWithUid(
-                app_id,
-                app_cert,
-                stream.channel_name,
-                uid,
-                RtcTokenBuilder.ROLE_PUBLISHER if role == "publisher" else RtcTokenBuilder.ROLE_SUBSCRIBER,
-                expire_timestamp
-            )
-            
-            return JsonResponse({
-                'success': True,
-                'token': token,
-                'channel_name': stream.channel_name,
-                'uid': uid,
-                'role': role,
-                'app_id': app_id
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=500)
 
 
 class MyLiveStreamsView(LoginRequiredMixin, ListView):
@@ -151,3 +96,34 @@ class MyLiveStreamsView(LoginRequiredMixin, ListView):
         return LiveStream.objects.filter(
             host=self.request.user
         ).order_by('-created_at')
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class AgoraTokenView(View):
+    """Generate Agora token for joining channel"""
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+
+            channel_name = data.get('channel_name')
+            uid = data.get('uid')              # ✅ FIX ตรงนี้
+            role = int(data.get('role', 1))    # 1 = publisher, 2 = subscriber
+
+            if not channel_name:
+                return JsonResponse({'error': 'channel_name is required'}, status=400)
+
+            if not uid:
+                return JsonResponse({'error': 'uid is required'}, status=400)
+
+            token = generate_agora_token(channel_name, uid, role)
+
+            return JsonResponse({
+                'token': token,
+                'uid': uid,
+                'channel': channel_name,
+                'app_id': settings.AGORA_APP_ID
+            })
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

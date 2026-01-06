@@ -1,55 +1,39 @@
-import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+import uuid
 
 
 class LiveStream(models.Model):
     """Live Stream model for Agora live streaming"""
     
     class Status(models.TextChoices):
-        SCHEDULED = 'scheduled', 'Scheduled'
-        LIVE = 'live', 'Live'
-        ENDED = 'ended', 'Ended'
+        LIVE = "live", "กำลังถ่ายทอด"
+        ENDED = "ended", "จบแล้ว"
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='live_streams')
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='live_streams')
     
     # Agora channel settings
     channel_name = models.CharField(max_length=255, unique=True, help_text="Agora channel name")
     
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.LIVE)
     started_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    class Meta:
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['host']),
-            models.Index(fields=['status']),
-            models.Index(fields=['channel_name']),
-        ]
-    
-    def __str__(self):
-        return f"{self.title} by {self.host.get_full_name_display()}"
-    
-    def start_stream(self):
-        """Start the live stream"""
-        if self.status == self.Status.LIVE:
-            return
-        self.status = self.Status.LIVE
-        self.started_at = timezone.now()
-        self.save()
-    
     def end_stream(self):
         """End the live stream"""
-        if self.status == self.Status.ENDED:
-            return
         self.status = self.Status.ENDED
         self.ended_at = timezone.now()
         self.save()
+    
+    def __str__(self):
+        return f"{self.title} - {self.get_status_display()}"
+    
+    class Meta:
+        ordering = ['-created_at']
+

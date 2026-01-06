@@ -74,6 +74,19 @@ class ChatRoomView(LoginRequiredMixin, DetailView):
         # Add current user ID for reliable template comparison
         context['current_user_id'] = str(self.request.user.id)
         
+        # Get related order if product exists
+        if room.product:
+            from orders.models import Order
+            # Find order related to this product and involving current user
+            related_order = Order.objects.filter(
+                product=room.product
+            ).filter(
+                Q(buyer=self.request.user) | Q(seller=self.request.user)
+            ).exclude(
+                status=Order.Status.CANCELLED
+            ).order_by('-created_at').first()
+            context['related_order'] = related_order
+        
         # Get filter parameter
         filter_type = self.request.GET.get('filter', 'all')
         context['filter'] = filter_type

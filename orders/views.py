@@ -117,3 +117,53 @@ class CancelOrderView(LoginRequiredMixin, View):
         
         messages.success(request, 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว')
         return redirect('orders:my_orders')
+
+
+class ShipOrderView(LoginRequiredMixin, View):
+    """ผู้ขายกรอกเลขพัสดุและยืนยันจัดส่ง"""
+    
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id, seller=request.user)
+        
+        # เช็คว่า order อยู่ในสถานะที่สามารถจัดส่งได้
+        if order.status != Order.Status.ESCROW_HELD:
+            messages.error(request, 'ไม่สามารถยืนยันการจัดส่งได้ในขณะนี้')
+            return redirect('orders:order_detail', order_id=order_id)
+        
+        tracking_number = request.POST.get('tracking_number', '').strip()
+        shipping_carrier = request.POST.get('shipping_carrier', '').strip()
+        
+        if not tracking_number or not shipping_carrier:
+            messages.error(request, 'กรุณากรอกเลขพัสดุและชื่อบริษัทขนส่ง')
+            return redirect('orders:order_detail', order_id=order_id)
+        
+        # อัพเดท order
+        from django.utils import timezone
+        order.tracking_number = tracking_number
+        order.shipping_carrier = shipping_carrier
+        order.shipped_at = timezone.now()
+        order.status = Order.Status.SHIPPED
+        order.save()
+        
+        messages.success(request, 'ยืนยันการจัดส่งเรียบร้อยแล้ว')
+        return redirect('orders:order_detail', order_id=order_id)
+
+
+class ConfirmReceivedView(LoginRequiredMixin, View):
+    """ผู้ซื้อยืนยันได้รับสินค้า"""
+    
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id, buyer=request.user)
+        
+        # เช็คว่า order อยู่ในสถานะจัดส่งแล้ว
+        if order.status != Order.Status.SHIPPED:
+            messages.error(request, 'ไม่สามารถยืนยันการรับสินค้าได้ในขณะนี้')
+            return redirect('orders:order_detail', order_id=order_id)
+        
+        # เปลี่ยนสถานะเป็นสำเร็จ
+        order.status = Order.Status.COMPLETED
+        order.save()
+        
+        messages.success(request, 'ยืนยันการรับสินค้าเรียบร้อยแล้ว ขอบคุณที่ใช้บริการ')
+        return redirect('orders:order_detail', order_id=order_id)
+

@@ -23,8 +23,26 @@
             {% endif %}
         </div>
 
-        <!-- Payment Button - only show if this chat has a product and user is buyer (not seller) -->
-        {% if room.product and room.product.seller != request.user %}
+        <!-- Order Status Button - show if there's a related order -->
+        {% if related_order %}
+        <a href="{% url 'orders:order_detail' order_id=related_order.id %}" class="px-3 py-2 rounded-lg font-medium text-sm transition-all shadow-sm flex items-center gap-2
+                {% if related_order.status == 'pending_payment' %}bg-yellow-100 text-yellow-800 hover:bg-yellow-200
+                {% elif related_order.status == 'escrow_held' %}bg-green-100 text-green-800 hover:bg-green-200
+                {% elif related_order.status == 'shipped' %}bg-purple-100 text-purple-800 hover:bg-purple-200
+                {% elif related_order.status == 'completed' %}bg-emerald-100 text-emerald-800 hover:bg-emerald-200
+                {% else %}bg-slate-100 text-slate-700 hover:bg-slate-200
+                {% endif %}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                </path>
+            </svg>
+            {{ related_order.get_status_display }}
+        </a>
+        {% endif %}
+
+        <!-- Payment Button - only show if this chat has a product and user is buyer (not seller) and no active order -->
+        {% if room.product and room.product.seller != request.user and not related_order %}
         <a href="{% url 'orders:create_order' product_id=room.product.id %}"
             class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-sm flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,33 +176,33 @@
                 this.scrollToBottom();
                 this.connectWebSocket();
             },
-            
+
             connectWebSocket() {
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const wsUrl = `${protocol}//${window.location.host}/ws/chat/${this.roomId}/`;
-                
+
                 this.websocket = new WebSocket(wsUrl);
-                
+
                 this.websocket.onopen = () => {
                     console.log('WebSocket connected');
                 };
-                
+
                 this.websocket.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     if (data.type === 'chat_message') {
                         const message = data.message;
                         message.is_mine = message.sender_id === this.currentUserId;
-                        message.time = new Date(message.created_at).toLocaleTimeString('th-TH', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                        message.time = new Date(message.created_at).toLocaleTimeString('th-TH', {
+                            hour: '2-digit',
+                            minute: '2-digit'
                         });
-                        
+
                         // Check if message already exists
                         const existingIds = new Set(this.newMessages.map(m => m.id));
                         document.querySelectorAll('[data-message-id]').forEach(el => {
                             existingIds.add(el.dataset.messageId);
                         });
-                        
+
                         if (!existingIds.has(message.id)) {
                             this.newMessages.push(message);
                             this.lastMessageId = message.id;
@@ -192,11 +210,11 @@
                         }
                     }
                 };
-                
+
                 this.websocket.onerror = (error) => {
                     console.error('WebSocket error:', error);
                 };
-                
+
                 this.websocket.onclose = () => {
                     console.log('WebSocket disconnected, reconnecting...');
                     setTimeout(() => this.connectWebSocket(), 3000);

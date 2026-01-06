@@ -150,6 +150,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -181,8 +184,8 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_...")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # Will be set after creating webhook endpoint
 
-# Agora Settings (Free Tier)
-AGORA_APP_ID = os.getenv("AGORA_APP_ID", "")
-AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "")
+# Agora Settings
+AGORA_APP_ID = os.getenv("AGORA_APP_ID", "").strip() if os.getenv("AGORA_APP_ID") else ""
+AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "").strip() if os.getenv("AGORA_APP_CERTIFICATE") else ""
 
 SERVER_EMAIL = EMAIL_HOST_USER

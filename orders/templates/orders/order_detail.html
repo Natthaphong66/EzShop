@@ -19,6 +19,26 @@
                     {{ order.get_status_display }}
                 </span>
             </div>
+            <!-- Role indicator -->
+            <p class="text-sm text-slate-500 mt-1">
+                {% if order.seller == request.user %}
+                <span class="inline-flex items-center gap-1">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    คุณเป็นผู้ขายในคำสั่งซื้อนี้
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1">
+                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    คุณเป็นผู้ซื้อในคำสั่งซื้อนี้
+                </span>
+                {% endif %}
+            </p>
         </div>
 
         <div class="p-6">
@@ -38,7 +58,11 @@
                 {% endif %}
                 <div class="flex-1">
                     <h2 class="font-semibold text-slate-800">{{ order.product.name }}</h2>
+                    {% if order.seller == request.user %}
+                    <p class="text-sm text-slate-500">ผู้ซื้อ: {{ order.buyer.get_full_name_display }}</p>
+                    {% else %}
                     <p class="text-sm text-slate-500">ผู้ขาย: {{ order.seller.get_full_name_display }}</p>
+                    {% endif %}
                     <p class="text-xl font-bold text-green-600 mt-1">฿{{ order.amount|floatformat:0|intcomma }}</p>
                 </div>
             </div>
@@ -47,32 +71,97 @@
             <div class="mb-6">
                 <h3 class="font-semibold text-slate-800 mb-4">สถานะการสั่งซื้อ</h3>
                 <div class="flex items-center justify-between">
-                    {% with statuses="pending_payment,escrow_held,shipped,completed" %}
-                    {% for status in statuses.split %}
+                    <!-- Step 1: รอชำระเงิน -->
                     <div class="flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                            {% if order.status == status %}bg-green-500 text-white
-                            {% elif forloop.counter0 < "
-                            pending_payment,escrow_held,shipped,completed".split|index:order.status
-                            %}bg-green-500 text-white {% else %}bg-slate-200 text-slate-500{% endif %}">
-                            {{ forloop.counter }}
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                            {% if order.status == 'pending_payment' %}bg-yellow-500 text-white ring-4 ring-yellow-200
+                            {% elif order.status == 'escrow_held' or order.status == 'shipped' or order.status == 'completed' %}bg-green-500 text-white
+                            {% else %}bg-slate-200 text-slate-500{% endif %}">
+                            1
                         </div>
-                        <span class="text-xs text-slate-500 mt-1 text-center w-16">
-                            {% if status == 'pending_payment' %}รอชำระ
-                            {% elif status == 'escrow_held' %}เงินในระบบ
-                            {% elif status == 'shipped' %}จัดส่งแล้ว
-                            {% elif status == 'completed' %}สำเร็จ{% endif %}
-                        </span>
+                        <span class="text-xs text-slate-600 mt-2 text-center font-medium">รอชำระเงิน</span>
                     </div>
-                    {% if not forloop.last %}
-                    <div class="flex-1 h-1 bg-slate-200 mx-2 rounded"></div>
-                    {% endif %}
-                    {% endfor %}
-                    {% endwith %}
+
+                    <!-- Line 1-2 -->
+                    <div class="flex-1 h-1 mx-2 rounded
+                        {% if order.status == 'escrow_held' or order.status == 'shipped' or order.status == 'completed' %}bg-green-500
+                        {% else %}bg-slate-200{% endif %}"></div>
+
+                    <!-- Step 2: รอจัดส่ง -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                            {% if order.status == 'escrow_held' %}bg-blue-500 text-white ring-4 ring-blue-200
+                            {% elif order.status == 'shipped' or order.status == 'completed' %}bg-green-500 text-white
+                            {% else %}bg-slate-200 text-slate-500{% endif %}">
+                            2
+                        </div>
+                        <span class="text-xs text-slate-600 mt-2 text-center font-medium">รอจัดส่ง</span>
+                    </div>
+
+                    <!-- Line 2-3 -->
+                    <div class="flex-1 h-1 mx-2 rounded
+                        {% if order.status == 'shipped' or order.status == 'completed' %}bg-green-500
+                        {% else %}bg-slate-200{% endif %}"></div>
+
+                    <!-- Step 3: กำลังจัดส่ง -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                            {% if order.status == 'shipped' %}bg-purple-500 text-white ring-4 ring-purple-200
+                            {% elif order.status == 'completed' %}bg-green-500 text-white
+                            {% else %}bg-slate-200 text-slate-500{% endif %}">
+                            3
+                        </div>
+                        <span class="text-xs text-slate-600 mt-2 text-center font-medium">กำลังจัดส่ง</span>
+                    </div>
+
+                    <!-- Line 3-4 -->
+                    <div class="flex-1 h-1 mx-2 rounded
+                        {% if order.status == 'completed' %}bg-green-500
+                        {% else %}bg-slate-200{% endif %}"></div>
+
+                    <!-- Step 4: ยืนยันรับสินค้า -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                            {% if order.status == 'completed' %}bg-emerald-500 text-white ring-4 ring-emerald-200
+                            {% else %}bg-slate-200 text-slate-500{% endif %}">
+                            4
+                        </div>
+                        <span class="text-xs text-slate-600 mt-2 text-center font-medium">รับสินค้า</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Payment Instructions -->
+            <!-- Shipping Information (visible when shipped or completed) -->
+            {% if order.tracking_number and order.shipping_carrier %}
+            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    <h3 class="font-bold text-purple-800">ข้อมูลการจัดส่ง</h3>
+                </div>
+                <div class="bg-white rounded-lg p-3 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">บริษัทขนส่ง:</span>
+                        <span class="font-semibold text-slate-800">{{ order.shipping_carrier }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">เลขพัสดุ:</span>
+                        <span
+                            class="font-mono font-semibold text-purple-600 bg-purple-100 px-2 py-1 rounded">{{order.tracking_number}}</span>
+                    </div>
+                    {% if order.shipped_at %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">จัดส่งเมื่อ:</span>
+                        <span class="text-sm text-slate-700">{{ order.shipped_at|date:"d M Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Payment Instructions (for buyer) -->
             {% if order.buyer == request.user and order.status == 'pending_payment' %}
             <div class="bg-blue-50 border-2 border-blue-400 rounded-xl p-4 mb-6">
                 <div class="flex items-center gap-2 mb-2">
@@ -90,12 +179,104 @@
             </div>
             {% endif %}
 
+            <!-- Seller: Payment Status Info -->
+            {% if order.seller == request.user %}
+            <div class="mb-6">
+                {% if order.status == 'pending_payment' %}
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="font-bold text-yellow-800">รอการชำระเงิน</h3>
+                    </div>
+                    <p class="text-sm text-yellow-700">ผู้ซื้อยังไม่ได้ชำระเงิน กรุณารอจนกว่าจะมีการชำระเงินเข้ามา</p>
+                </div>
+                {% elif order.status == 'escrow_held' %}
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="font-bold text-green-800">ชำระเงินแล้ว - พร้อมจัดส่ง</h3>
+                    </div>
+                    <p class="text-sm text-green-700 mb-4">ผู้ซื้อชำระเงินแล้ว กรุณากรอกเลขพัสดุและยืนยันการจัดส่ง</p>
+
+                    <!-- Shipping Form -->
+                    <form method="post" action="{% url 'orders:ship_order' order_id=order.id %}" class="space-y-3">
+                        {% csrf_token %}
+                        <div>
+                            <label for="shipping_carrier"
+                                class="block text-sm font-medium text-slate-700 mb-1">บริษัทขนส่ง</label>
+                            <select name="shipping_carrier" id="shipping_carrier" required
+                                class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">-- เลือกบริษัทขนส่ง --</option>
+                                <option value="Thailand Post">ไปรษณีย์ไทย (Thailand Post)</option>
+                                <option value="Kerry Express">Kerry Express</option>
+                                <option value="Flash Express">Flash Express</option>
+                                <option value="J&T Express">J&T Express</option>
+                                <option value="Ninja Van">Ninja Van</option>
+                                <option value="Best Express">Best Express</option>
+                                <option value="DHL">DHL</option>
+                                <option value="Shopee Express">Shopee Express</option>
+                                <option value="Lazada Express">Lazada Express</option>
+                                <option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tracking_number" class="block text-sm font-medium text-slate-700 mb-1">เลขพัสดุ
+                                (Tracking Number)</label>
+                            <input type="text" name="tracking_number" id="tracking_number" required
+                                placeholder="กรอกเลขพัสดุ เช่น TH12345678901"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <button type="submit"
+                            class="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all">
+                            ยืนยันการจัดส่ง
+                        </button>
+                    </form>
+                </div>
+                {% elif order.status == 'shipped' %}
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <h3 class="font-bold text-purple-800">จัดส่งแล้ว</h3>
+                    </div>
+                    <p class="text-sm text-purple-700">คุณได้จัดส่งสินค้าแล้ว รอผู้ซื้อยืนยันการรับสินค้า</p>
+                </div>
+                {% elif order.status == 'completed' %}
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="font-bold text-emerald-800">สำเร็จ</h3>
+                    </div>
+                    <p class="text-sm text-emerald-700">คำสั่งซื้อเสร็จสมบูรณ์ ผู้ซื้อได้รับสินค้าแล้ว</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Action Buttons -->
             <div class="flex gap-3">
+                {% if order.seller == request.user %}
+                <a href="{% url 'orders:my_sales' %}"
+                    class="flex-1 py-3 px-4 border border-slate-300 text-slate-700 rounded-lg font-medium text-center hover:bg-slate-50 transition-colors">
+                    กลับไปรายการขาย
+                </a>
+                {% else %}
                 <a href="{% url 'orders:my_orders' %}"
                     class="flex-1 py-3 px-4 border border-slate-300 text-slate-700 rounded-lg font-medium text-center hover:bg-slate-50 transition-colors">
                     กลับไปรายการ
                 </a>
+                {% endif %}
 
                 {% if order.buyer == request.user %}
                 {% if order.status == 'pending_payment' %}
@@ -112,7 +293,8 @@
                     </button>
                 </form>
                 {% elif order.status == 'shipped' %}
-                <form method="post" action="{% url 'orders:confirm_received' order_id=order.id %}" class="flex-1">
+                <form method="post" action="{% url 'orders:confirm_received' order_id=order.id %}" class="flex-1"
+                    onsubmit="return confirm('ยืนยันว่าคุณได้รับสินค้าแล้ว?');">
                     {% csrf_token %}
                     <button type="submit"
                         class="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all">
@@ -130,11 +312,11 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script>
     const payButton = document.getElementById('pay-button');
-    
+
     payButton.addEventListener('click', async () => {
         payButton.disabled = true;
         payButton.textContent = 'กำลังโหลด...';
-        
+
         try {
             const response = await fetch('{% url "payments:create_payment_intent" order_id=order.id %}', {
                 method: 'POST',
@@ -143,22 +325,22 @@
                     'Content-Type': 'application/json',
                 },
             });
-            
+
             const data = await response.json();
-            
+
             if (data.error) {
                 alert('เกิดข้อผิดพลาด: ' + data.error);
                 payButton.disabled = false;
                 payButton.textContent = 'ชำระเงิน';
                 return;
             }
-            
+
             // Redirect to Stripe Checkout
             const stripe = Stripe('{{ STRIPE_PUBLISHABLE_KEY }}');
             const { error } = await stripe.redirectToCheckout({
                 sessionId: data.session_id,
             });
-            
+
             if (error) {
                 alert('เกิดข้อผิดพลาด: ' + error.message);
                 payButton.disabled = false;
