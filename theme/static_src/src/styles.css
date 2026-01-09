@@ -3,7 +3,8 @@
 
 @theme {
   /* ตั้งค่าฟอนต์หลัก (sans) ให้เป็น Ubuntu */
-  --font-sans: "Ubuntu", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: "Ubuntu", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 /**
   * A catch-all path to Django template files, JavaScript, and Python files
@@ -11,5 +12,6 @@
   *
   * If your final CSS file is not being updated after code changes, you may want to broaden or narrow
   * the scope of this path.
+  * Updated at: 2024-01-09
   */
 @source "../../../**/*.{html,py,js}";

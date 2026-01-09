@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<title>เตรียมพร้อมเริ่มไลฟ์ - EzShop</title>
+<!-- Agora SDK -->
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js"></script>
+
+<style>
+    main {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    }
+
+    #preview-player video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        transform: scaleX(-1);
+    }
+
+    .audio-bar {
+        transition: width 0.1s ease-out;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(0.8);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1.4);
+            opacity: 0;
+        }
+    }
+
+    .pulse-ring {
+        animation: pulse-ring 1.5s ease-out infinite;
+    }
+</style>
+{% endblock %}
+
+{% block banner %}{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-120px)] flex items-center justify-center py-8 px-4">
+    <div class="w-full max-w-5xl">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">เตรียมพร้อมก่อนไลฟ์</h1>
+            <p class="text-slate-500">ตั้งชื่อไลฟ์ และตรวจสอบกล้อง/ไมโครโฟนให้พร้อม</p>
+        </div>
+
+        <!-- Main Card -->
+        <form method="post" id="start-form">
+            {% csrf_token %}
+            <div class="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 overflow-hidden border border-slate-100">
+                <div class="grid grid-cols-1 lg:grid-cols-2">
+
+                    <!-- Left: Video Preview -->
+                    <div
+                        class="relative bg-gradient-to-br from-slate-900 to-slate-800 aspect-video lg:aspect-auto lg:min-h-[480px]">
+                        <div id="preview-player" class="absolute inset-0"></div>
+
+                        <!-- Loading Overlay -->
+                        <div id="preview-loading"
+                            class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm">
+                            <div class="relative">
+                                <div
+                                    class="w-16 h-16 border-4 border-slate-700 border-t-red-500 rounded-full animate-spin">
+                                </div>
+                            </div>
+                            <p class="mt-6 text-slate-400">กำลังเตรียมกล้อง...</p>
+                        </div>
+
+                        <!-- Audio Level Bar -->
+                        <div class="absolute bottom-4 left-4 right-4 z-10">
+                            <div class="bg-black/60 backdrop-blur-md rounded-xl px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-xs text-white/70">ระดับเสียง</span>
+                                            <span class="text-xs text-white/70" id="audio-level-text">0%</span>
+                                        </div>
+                                        <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                                            <div id="audio-level-fill"
+                                                class="h-full bg-gradient-to-r from-green-400 to-green-500 audio-bar rounded-full"
+                                                style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Settings Panel -->
+                    <div class="p-8 flex flex-col">
+                        <div class="flex-1 space-y-6">
+
+                            <!-- Stream Title Input -->
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+                                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    ชื่อไลฟ์สตรีม <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="title" id="title-input" required
+                                    placeholder="เช่น ขายเสื้อผ้ามือสอง, รีวิวสินค้าใหม่"
+                                    class="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-red-500 focus:bg-white transition-all">
+                            </div>
+
+                            <!-- Camera Select -->
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+                                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    กล้อง
+                                </label>
+                                <select id="camera-select" onchange="changeCamera()"
+                                    class="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-red-500 focus:bg-white transition-all cursor-pointer">
+                                    <option value="">กำลังโหลด...</option>
+                                </select>
+                            </div>
+
+                            <!-- Mic Select -->
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+                                    <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                        </svg>
+                                    </div>
+                                    ไมโครโฟน
+                                </label>
+                                <select id="mic-select" onchange="changeMic()"
+                                    class="w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-red-500 focus:bg-white transition-all cursor-pointer">
+                                    <option value="">กำลังโหลด...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-8 space-y-4">
+                            <button type="submit" id="btn-start-stream" disabled
+                                class="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-lg font-bold rounded-2xl transition-all shadow-lg shadow-red-500/25 disabled:shadow-none flex items-center justify-center gap-3 transform hover:scale-[1.02] active:scale-[0.98]">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                เริ่มไลฟ์สด
+                            </button>
+
+                            <a href="{% url 'live:stream_list' %}"
+                                class="block w-full py-3 text-center text-slate-500 hover:text-slate-700 font-medium transition-colors">
+                                ยกเลิกและกลับ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Tips -->
+        <div class="mt-8 flex items-center justify-center gap-6 text-sm text-slate-400">
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                ใช้แสงที่เพียงพอ
+            </span>
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                ทดสอบเสียงก่อนเริ่ม
+            </span>
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+                ใช้อินเทอร์เน็ตที่เสถียร
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let previewTracks = { videoTrack: null, audioTrack: null };
+    let audioLevelInterval = null;
+
+    document.addEventListener("DOMContentLoaded", loadDevices);
+
+    async function loadDevices() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            stream.getTracks().forEach(track => track.stop());
+
+            const devices = await AgoraRTC.getDevices();
+            const cameras = devices.filter(d => d.kind === "videoinput");
+            const mics = devices.filter(d => d.kind === "audioinput");
+
+            // Populate dropdowns
+            const cameraSelect = document.getElementById("camera-select");
+            cameraSelect.innerHTML = cameras.map((cam, i) =>
+                `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
+            ).join("");
+
+            const micSelect = document.getElementById("mic-select");
+            micSelect.innerHTML = mics.map((mic, i) =>
+                `<option value="${mic.deviceId}">${mic.label || `Microphone ${i + 1}`}</option>`
+            ).join("");
+
+            if (cameras.length > 0 && mics.length > 0) {
+                await startPreview(cameras[0].deviceId, mics[0].deviceId);
+            }
+
+        } catch (err) {
+            console.error("Error loading devices:", err);
+            alert("ไม่สามารถเข้าถึงกล้องหรือไมค์ได้ กรุณาอนุญาตการใช้งาน");
+        }
+    }
+
+    async function startPreview(cameraId, micId) {
+        try {
+            stopPreviewTracks();
+
+            previewTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
+                cameraId,
+                encoderConfig: "720p_1"
+            });
+
+            previewTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+                microphoneId: micId
+            });
+
+            document.getElementById("preview-loading").classList.add("hidden");
+            previewTracks.videoTrack.play("preview-player");
+            startAudioLevelMonitor();
+            document.getElementById("btn-start-stream").disabled = false;
+
+        } catch (err) {
+            console.error("Preview error:", err);
+        }
+    }
+
+    function stopPreviewTracks() {
+        if (previewTracks.videoTrack) {
+            previewTracks.videoTrack.stop();
+            previewTracks.videoTrack.close();
+        }
+        if (previewTracks.audioTrack) {
+            previewTracks.audioTrack.stop();
+            previewTracks.audioTrack.close();
+        }
+    }
+
+    function changeCamera() {
+        const cameraId = document.getElementById("camera-select").value;
+        const micId = document.getElementById("mic-select").value;
+        startPreview(cameraId, micId);
+    }
+
+    function changeMic() {
+        const cameraId = document.getElementById("camera-select").value;
+        const micId = document.getElementById("mic-select").value;
+        startPreview(cameraId, micId);
+    }
+
+    function startAudioLevelMonitor() {
+        if (audioLevelInterval) clearInterval(audioLevelInterval);
+
+        audioLevelInterval = setInterval(() => {
+            if (previewTracks.audioTrack) {
+                const level = previewTracks.audioTrack.getVolumeLevel();
+                const percent = Math.round(level * 100);
+                document.getElementById("audio-level-fill").style.width = `${percent}%`;
+                document.getElementById("audio-level-text").textContent = `${percent}%`;
+            }
+        }, 100);
+    }
+
+    // Handle form submission
+    document.getElementById("start-form").addEventListener("submit", (e) => {
+        // Validate title
+        const title = document.getElementById("title-input").value.trim();
+        if (!title) {
+            e.preventDefault();
+            alert("กรุณาตั้งชื่อไลฟ์สตรีม");
+            return;
+        }
+
+        // Store device selection before form submits
+        sessionStorage.setItem('selectedCameraId', document.getElementById("camera-select").value);
+        sessionStorage.setItem('selectedMicId', document.getElementById("mic-select").value);
+
+        // Stop preview tracks
+        stopPreviewTracks();
+        if (audioLevelInterval) clearInterval(audioLevelInterval);
+
+        // Show loading state
+        const btn = document.getElementById("btn-start-stream");
+        btn.innerHTML = `
+            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            กำลังเริ่ม...
+        `;
+
+        // Form will submit normally
+    });
+</script>
+{% endblock %}

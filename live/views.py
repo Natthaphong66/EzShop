@@ -53,23 +53,37 @@ class LiveStreamDetailView(DetailView):
             return context
 
 
-class LiveStreamCreateView(LoginRequiredMixin, CreateView):
-    """สร้าง live stream ใหม่"""
-    model = LiveStream
-    template_name = 'live/stream_form.html'
-    fields = ['title', 'description']
-    success_url = reverse_lazy('live:stream_list')
+class LiveStreamPrepareView(LoginRequiredMixin, View):
+    """หน้าเตรียมความพร้อมก่อนเริ่ม Live - ตั้งชื่อ + เลือกกล้อง/ไมค์"""
+    template_name = 'live/stream_prepare.html'
     
-    def form_valid(self, form):
-        stream = form.save(commit=False)
-        stream.host = self.request.user
-        # Generate unique channel name
-        stream.channel_name = f"live_{uuid.uuid4().hex[:16]}"
-        stream.status = LiveStream.Status.LIVE
-        stream.started_at = timezone.now()
-        stream.save()
-        messages.success(self.request, 'เริ่มถ่ายทอดสดแล้ว!')
+    def get(self, request):
+        return render(request, self.template_name)
+    
+    def post(self, request):
+        # Create and start stream
+        title = request.POST.get('title', 'ไลฟ์สตรีม')
+        if not title.strip():
+            title = 'ไลฟ์สตรีม'
+            
+        stream = LiveStream.objects.create(
+            host=request.user,
+            title=title,
+            channel_name=f"live_{uuid.uuid4().hex[:16]}",
+            status=LiveStream.Status.LIVE,
+            started_at=timezone.now()
+        )
         return redirect('live:stream_detail', pk=stream.pk)
+
+
+class LiveStreamCancelView(LoginRequiredMixin, View):
+    """ยกเลิก stream ที่กำลัง preparing"""
+    
+    def post(self, request, pk):
+        stream = get_object_or_404(LiveStream, pk=pk, host=request.user)
+        if stream.status == LiveStream.Status.PREPARING:
+            stream.delete()
+        return redirect('live:stream_list')
 
 
 class LiveStreamEndView(LoginRequiredMixin, View):
@@ -79,7 +93,6 @@ class LiveStreamEndView(LoginRequiredMixin, View):
         stream = get_object_or_404(LiveStream, pk=pk, host=request.user)
         if stream.status == LiveStream.Status.LIVE:
             stream.end_stream()
-            messages.success(request, 'หยุดถ่ายทอดสดแล้ว')
         return redirect('live:stream_list')
 
 
