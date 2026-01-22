@@ -158,6 +158,18 @@
                     </div>
                     {% endif %}
                 </div>
+                <!-- ปุ่มติดตามพัสดุ -->
+                <a href="{% url 'orders:tracking' order_id=order.id %}"
+                    style="display: block; margin-top: 1rem; width: 100%; text-align: center; padding: 0.75rem 1rem; background: linear-gradient(to right, #8B5CF6, #4F46E5); color: white; border-radius: 0.5rem; font-weight: 500; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        ติดตามพัสดุ
+                    </span>
+                </a>
             </div>
             {% endif %}
 
@@ -208,26 +220,25 @@
                     <form method="post" action="{% url 'orders:ship_order' order_id=order.id %}" class="space-y-3">
                         {% csrf_token %}
                         <div>
-                            <label for="shipping_carrier"
+                            <label for="carrier_slug"
                                 class="block text-sm font-medium text-slate-700 mb-1">บริษัทขนส่ง</label>
-                            <select name="shipping_carrier" id="shipping_carrier" required
+                            <select name="carrier_slug" id="carrier_slug" required
                                 class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
                                 <option value="">-- เลือกบริษัทขนส่ง --</option>
-                                <option value="Thailand Post">ไปรษณีย์ไทย (Thailand Post)</option>
-                                <option value="Kerry Express">Kerry Express</option>
-                                <option value="Flash Express">Flash Express</option>
-                                <option value="J&T Express">J&T Express</option>
-                                <option value="Ninja Van">Ninja Van</option>
-                                <option value="Best Express">Best Express</option>
-                                <option value="DHL">DHL</option>
-                                <option value="Shopee Express">Shopee Express</option>
-                                <option value="Lazada Express">Lazada Express</option>
-                                <option value="อื่นๆ">อื่นๆ</option>
+                                <option value="thailand-post">ไปรษณีย์ไทย (Thailand Post)</option>
+                                <option value="kerry-express-thailand">KEX Express</option>
+                                <option value="flash-express">Flash Express</option>
+                                <option value="ninjavan-thailand">Ninja Van</option>
+                                <option value="dhl">DHL</option>
+                                <option value="shopee-express-thailand">Shopee Express</option>
+                                <option value="jtexpress-th">J&T Express</option>
+                                <option value="best-express">Best Express</option>
+                                <option value="other">อื่นๆ</option>
                             </select>
                         </div>
                         <div>
-                            <label for="tracking_number" class="block text-sm font-medium text-slate-700 mb-1">เลขพัสดุ
-                                (Tracking Number)</label>
+                            <label for="tracking_number"
+                                class="block text-sm font-medium text-slate-700 mb-1">เลขพัสดุ(Tracking Number)</label>
                             <input type="text" name="tracking_number" id="tracking_number" required
                                 placeholder="กรอกเลขพัสดุ เช่น TH12345678901"
                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
@@ -259,6 +270,67 @@
                         <h3 class="font-bold text-emerald-800">สำเร็จ</h3>
                     </div>
                     <p class="text-sm text-emerald-700">คำสั่งซื้อเสร็จสมบูรณ์ ผู้ซื้อได้รับสินค้าแล้ว</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Review Section (for completed orders) -->
+            {% if order.status == 'completed' %}
+            <div class="mb-6">
+                {% if order.review %}
+                <!-- Show existing review -->
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                        <h3 class="font-bold text-amber-800">รีวิวของคุณ</h3>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <!-- Star Rating -->
+                        <div class="flex items-center gap-1 mb-2">
+                            {% for i in "12345" %}
+                            {% if forloop.counter <= order.review.rating %} <svg class="w-5 h-5 text-amber-400"
+                                fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                                {% else %}
+                                <svg class="w-5 h-5 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                                {% endif %}
+                                {% endfor %}
+                                <span class="text-sm text-slate-600 ml-2">{{ order.review.rating }} ดาว</span>
+                        </div>
+                        {% if order.review.comment %}
+                        <p class="text-sm text-slate-700">{{ order.review.comment }}</p>
+                        {% endif %}
+                        <p class="text-xs text-slate-400 mt-2">{{ order.review.created_at|date:"d M Y H:i" }}</p>
+                    </div>
+                </div>
+                {% elif order.buyer == request.user %}
+                <!-- Show write review button -->
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <div>
+                                <h3 class="font-bold text-amber-800">ยังไม่ได้รีวิว</h3>
+                                <p class="text-xs text-amber-700">แชร์ประสบการณ์ของคุณกับผู้ขาย</p>
+                            </div>
+                        </div>
+                        <a href="{% url 'reviews:create_review' order_id=order.id %}"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all">
+                            เขียนรีวิว
+                        </a>
+                    </div>
                 </div>
                 {% endif %}
             </div>

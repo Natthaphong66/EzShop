@@ -354,7 +354,6 @@ class StreamManager {
         if (message) {
             this.addChatMessage(this.config.currentUsername, message);
             input.value = "";
-            // TODO: Here you would emit the message to other users via WebSocket or Agora RTM
         }
     }
 

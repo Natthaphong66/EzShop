@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-2">
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+
+        <!-- ส่วนหัว: ข้อมูลพัสดุ -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white relative overflow-hidden">
+            <!-- Decorative circles -->
+            <div class="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
+            <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-2">
+                    <a href="{% url 'orders:order_detail' order_id=order.id %}"
+                        class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </a>
+                    <h1 class="text-xl font-bold">ติดตามพัสดุ</h1>
+                </div>
+
+                <div class="bg-white/20 backdrop-blur rounded-xl p-4 mt-4">
+                    <p class="text-blue-100 text-sm">เลขพัสดุ</p>
+                    <p id="trackingNumberDisplay" class="font-mono font-bold text-lg tracking-wider">{{order.tracking_number }}</p>
+                </div>
+
+                <div id="courierBadge"
+                    class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white/20 backdrop-blur rounded-full text-sm font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    <span>{{ carrier_display }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ส่วนเนื้อหา -->
+        <div id="trackingContent" class="p-6">
+
+            <!-- สถานะปัจจุบัน -->
+            <div id="currentStatus" class="hidden mb-6">
+                <div id="statusBadge"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold">
+                    <span id="statusDot" class="w-2 h-2 rounded-full animate-pulse"></span>
+                    <span id="statusText"></span>
+                </div>
+                <p id="expectedDelivery" class="text-sm text-slate-500 mt-2 hidden">
+                    คาดว่าจะได้รับ: <span id="expectedDeliveryDate"></span>
+                </p>
+            </div>
+
+            <!-- กรณี: มีข้อมูล API (Timeline) -->
+            <div id="apiTimeline" class="hidden">
+                <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    ประวัติการจัดส่ง
+                </h3>
+                <div class="relative">
+                    <div
+                        class="absolute left-3 top-2 h-full w-0.5 bg-gradient-to-b from-blue-500 via-slate-200 to-transparent">
+                    </div>
+                    <ul id="timelineItems" class="space-y-6 ml-8">
+                        <!-- รายการ Timeline จาก API จะถูกฉีดเข้าที่นี่ -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- กรณี: ไม่มี API (Deep Link Fallback) -->
+            <div id="deepLinkFallback" class="hidden text-center py-10">
+                <div class="mb-6 relative inline-block">
+                    <div class="absolute inset-0 bg-blue-100 rounded-full scale-150 animate-ping opacity-20"></div>
+                    <div
+                        class="relative bg-gradient-to-br from-blue-500 to-indigo-600 w-20 h-20 rounded-full flex items-center justify-center shadow-lg">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">ติดตามผ่านเว็บไซต์ขนส่ง</h3>
+                <p class="text-slate-500 text-sm mt-2 mb-8 max-w-sm mx-auto">
+                    คุณสามารถตรวจสอบสถานะพัสดุโดยตรงผ่านเว็บไซต์ของบริษัทขนส่งได้
+                </p>
+                <a id="externalTrackBtn" href="{{ deep_link_url }}" target="_blank"
+                    class="inline-flex items-center justify-center w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-200/50 transform hover:scale-[1.02]">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    ไปที่เว็บไซต์ของ <span id="carrierNameBtn" class="ml-1">{{ carrier_display }}</span>
+                </a>
+            </div>
+
+            <!-- กรณี: กำลังโหลด -->
+            <div id="loadingState" class="text-center py-10">
+                <div class="relative inline-block">
+                    <div class="w-12 h-12 border-4 border-blue-200 rounded-full"></div>
+                    <div
+                        class="absolute top-0 left-0 w-12 h-12 border-4 border-blue-600 rounded-full animate-spin border-t-transparent">
+                    </div>
+                </div>
+                <p class="text-slate-400 text-sm mt-4">กำลังค้นหาข้อมูล...</p>
+            </div>
+
+            <!-- กรณี: เกิดข้อผิดพลาด -->
+            <div id="errorState" class="hidden text-center py-10">
+                <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">ไม่สามารถดึงข้อมูลได้</h3>
+                <p id="errorMessage" class="text-slate-500 text-sm mt-2"></p>
+                <button onclick="fetchTracking()"
+                    class="mt-4 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">
+                    ลองใหม่อีกครั้ง
+                </button>
+            </div>
+        </div>
+
+        <!-- ปุ่มด้านล่าง -->
+        <div class="p-6 pt-0 flex gap-3">
+            <a href="{% url 'orders:order_detail' order_id=order.id %}"
+                class="flex-1 py-3 px-4 border border-slate-300 text-slate-700 rounded-xl font-medium text-center hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                กลับไปรายละเอียด
+            </a>
+            <button onclick="fetchTracking()"
+                class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                รีเฟรช
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const isApiSupported = "{{ is_api_supported|yesno:'true,false' }}";
+    const trackingApiUrl = "{% url 'orders:tracking_api' order_id=order.id %}";
+    const deepLinkUrl = "{{ deep_link_url }}";
+    const carrierDisplay = "{{ carrier_display }}";
+
+    function hideAllStates() {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('apiTimeline').classList.add('hidden');
+        document.getElementById('deepLinkFallback').classList.add('hidden');
+        document.getElementById('errorState').classList.add('hidden');
+        document.getElementById('currentStatus').classList.add('hidden');
+    }
+
+    function showLoading() {
+        hideAllStates();
+        document.getElementById('loadingState').classList.remove('hidden');
+    }
+
+    function showDeepLink() {
+        hideAllStates();
+        document.getElementById('deepLinkFallback').classList.remove('hidden');
+    }
+
+    function showError(message) {
+        hideAllStates();
+        document.getElementById('errorState').classList.remove('hidden');
+        document.getElementById('errorMessage').textContent = message || 'เกิดข้อผิดพลาดในการดึงข้อมูล';
+    }
+
+    function showTimeline(data) {
+        hideAllStates();
+
+        // แสดงสถานะปัจจุบัน
+        const currentStatus = document.getElementById('currentStatus');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        currentStatus.classList.remove('hidden');
+        statusText.textContent = data.tag_thai;
+
+        // กำหนดสีตาม tag
+        const colorMap = {
+            'green': 'bg-green-100 text-green-800',
+            'blue': 'bg-blue-100 text-blue-800',
+            'purple': 'bg-purple-100 text-purple-800',
+            'orange': 'bg-orange-100 text-orange-800',
+            'red': 'bg-red-100 text-red-800',
+            'gray': 'bg-slate-100 text-slate-800',
+            'teal': 'bg-teal-100 text-teal-800',
+        };
+        const dotColorMap = {
+            'green': 'bg-green-500',
+            'blue': 'bg-blue-500',
+            'purple': 'bg-purple-500',
+            'orange': 'bg-orange-500',
+            'red': 'bg-red-500',
+            'gray': 'bg-slate-500',
+            'teal': 'bg-teal-500',
+        };
+
+        statusBadge.className = `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${colorMap[data.tag_color] || colorMap.gray}`;
+        statusDot.className = `w-2 h-2 rounded-full animate-pulse ${dotColorMap[data.tag_color] || dotColorMap.gray}`;
+
+        // แสดง expected delivery
+        if (data.expected_delivery) {
+            const expectedEl = document.getElementById('expectedDelivery');
+            document.getElementById('expectedDeliveryDate').textContent = new Date(data.expected_delivery).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            expectedEl.classList.remove('hidden');
+        }
+
+        // แสดง Timeline
+        const timelineEl = document.getElementById('apiTimeline');
+        const timelineItems = document.getElementById('timelineItems');
+        timelineItems.innerHTML = '';
+
+        if (data.checkpoints && data.checkpoints.length > 0) {
+            timelineEl.classList.remove('hidden');
+
+            data.checkpoints.forEach((cp, index) => {
+                const isLatest = index === 0;
+                const date = cp.datetime ? new Date(cp.datetime) : null;
+                const formattedDate = date ? date.toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                }) : '';
+                const formattedTime = date ? date.toLocaleTimeString('th-TH', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '';
+
+                const li = document.createElement('li');
+                li.className = 'relative';
+                li.innerHTML = `
+                    <span class="absolute -left-10 mt-1.5 h-4 w-4 rounded-full border-4 border-white shadow-sm 
+                        ${isLatest ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-slate-300'}">
+                    </span>
+                    <div class="flex flex-col bg-slate-50 rounded-lg p-3 hover:bg-slate-100 transition-colors">
+                        <span class="text-sm font-semibold ${isLatest ? 'text-blue-700' : 'text-slate-700'}">${cp.message || 'อัพเดทสถานะ'}</span>
+                        <span class="text-xs text-slate-400 mt-1">${formattedDate} ${formattedTime}</span>
+                        ${cp.location ? `<span class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            ${cp.location}
+                        </span>` : ''}
+                    </div>
+                `;
+                timelineItems.appendChild(li);
+            });
+        } else {
+            // ไม่มี checkpoints แสดง pending
+            timelineEl.classList.remove('hidden');
+            const li = document.createElement('li');
+            li.className = 'relative';
+            li.innerHTML = `
+                <span class="absolute -left-10 mt-1.5 h-4 w-4 rounded-full border-4 border-white shadow-sm bg-blue-500 ring-4 ring-blue-100"></span>
+                <div class="flex flex-col bg-blue-50 rounded-lg p-3">
+                    <span class="text-sm font-semibold text-blue-700">กำลังรอข้อมูลจากบริษัทขนส่ง</span>
+                    <span class="text-xs text-slate-400 mt-1">ระบบจะอัพเดทอัตโนมัติเมื่อมีข้อมูล</span>
+                </div>
+            `;
+            timelineItems.appendChild(li);
+        }
+    }
+
+    async function fetchTracking() {
+        if (!isApiSupported) {
+            showDeepLink();
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch(trackingApiUrl);
+            const data = await response.json();
+
+            if (data.success) {
+                showTimeline(data.data);
+            } else if (data.use_deep_link) {
+                showDeepLink();
+            } else {
+                showError(data.error);
+            }
+        } catch (error) {
+            console.error('Tracking error:', error);
+            showError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+        }
+    }
+
+    // โหลดข้อมูลเมื่อเปิดหน้า
+    window.onload = fetchTracking;
+</script>
+{% endblock %}

@@ -37,9 +37,21 @@ class ProfileView(LoginRequiredMixin, TemplateView):
             context['products'] = []
             context['products_count'] = 0
         
-        # ตรวจสอบว่ามี reviews หรือไม่ (ถ้ามี app reviews)
-        context['reviews'] = []
-        context['reviews_count'] = 0
+        # ดึงรีวิวของผู้ใช้ (ในฐานะผู้ขาย)
+        try:
+            from reviews.models import Review
+            from django.db.models import Avg
+            reviews = Review.objects.filter(seller=user).select_related('reviewer', 'product')
+            context['reviews'] = reviews
+            context['reviews_count'] = reviews.count()
+            
+            # คำนวณคะแนนเฉลี่ย
+            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+            context['average_rating'] = round(avg_rating, 1) if avg_rating else 0
+        except:
+            context['reviews'] = []
+            context['reviews_count'] = 0
+            context['average_rating'] = 0
         
         return context
 

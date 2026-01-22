@@ -1,533 +1,555 @@
-{% extends "base.html" %}
-{% load static %}
-
-{% block extra_head %}
+{% extends "base.html" %} {% load static %} {% block extra_head %}
 <!-- Agora SDK -->
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js"></script>
 <style>
-    /* Minimal overrides for video player and animations */
-    #local-player {
-        width: 100%;
-        height: 100%;
+  /* Minimal overrides for video player and animations */
+  #local-player {
+    width: 100%;
+    height: 100%;
+  }
+
+  #local-player video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
     }
 
-    #local-player video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: contain !important;
+    50% {
+      box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
     }
+  }
 
-    @keyframes pulse-glow {
+  .animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+  }
 
-        0%,
-        100% {
-            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
-        }
+  /* Stream layout - Full width, White-Red Theme */
+  .stream-wrapper {
+    /* Break out of parent container - full width */
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+    height: calc(100vh - 80px);
+    display: flex;
+    box-sizing: border-box;
+    background: #f3f4f6;
+  }
 
-        50% {
-            box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
-        }
-    }
+  .stream-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
-    .animate-pulse-glow {
-        animation: pulse-glow 2s infinite;
-    }
+  .stream-layout {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
 
-    /* Stream layout - Full width, White-Red Theme */
+  .video-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #1f2937;
+  }
+
+  .video-header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  }
+
+  .video-player-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111827;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Video keeps its aspect ratio, centered */
+  .video-player-wrapper #local-player {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .video-player-wrapper video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .chat-sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+  }
+
+  /* Chat messages area */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    background: #ffffff;
+  }
+
+  /* Chat input area */
+  .chat-input-area {
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  /* Responsive: Stack on small screens */
+  @media (max-width: 768px) {
     .stream-wrapper {
-        /* Break out of parent container - full width */
-        width: 100vw;
-        position: relative;
-        left: 50%;
-        margin-left: -50vw;
-        height: calc(100vh - 80px);
-        display: flex;
-        box-sizing: border-box;
-        background: #f3f4f6;
+      height: auto;
+      min-height: calc(100vh - 80px);
     }
-
-    .stream-container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
     .stream-layout {
-        flex: 1;
-        display: flex;
-        min-height: 0;
+      flex-direction: column !important;
     }
-
-    .video-section {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        background: #1f2937;
-    }
-
-    .video-header {
-        flex-shrink: 0;
-        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    }
-
-    .video-player-wrapper {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #111827;
-        min-height: 0;
-        overflow: hidden;
-    }
-
-    /* Video keeps its aspect ratio, centered */
-    .video-player-wrapper #local-player {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .video-player-wrapper video {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-
     .chat-sidebar {
-        width: 340px;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        background: #ffffff;
-        border-left: 1px solid #e5e7eb;
+      width: 100% !important;
+      height: 350px !important;
+      flex-shrink: 0 !important;
+      border-left: none !important;
+      border-top: 1px solid #e5e7eb !important;
     }
-
-    /* Chat messages area */
-    .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-        background: #ffffff;
+    .video-section {
+      min-height: 300px;
     }
-
-    /* Chat input area */
-    .chat-input-area {
-        background: #ffffff;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    /* Responsive: Stack on small screens */
-    @media (max-width: 768px) {
-        .stream-wrapper {
-            height: auto;
-            min-height: calc(100vh - 80px);
-        }
-        .stream-layout {
-            flex-direction: column !important;
-    }
-        .chat-sidebar {
-            width: 100% !important;
-            height: 350px !important;
-            flex-shrink: 0 !important;
-            border-left: none !important;
-            border-top: 1px solid #e5e7eb !important;
-        }
-        .video-section {
-            min-height: 300px;
-        }
-    }
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <!-- Main Stream Wrapper - Full screen, White-Red Theme -->
 <div class="stream-wrapper">
-
-    <!-- Stream Container -->
-    <div class="stream-container">
-        <div class="stream-layout">
-
-            <!-- Video Section -->
-            <div class="video-section">
-
-                <!-- Stream Header - Red Gradient -->
-                <div class="video-header p-3 lg:p-4">
-                    <div class="flex items-center gap-3">
-                        <!-- Streamer Avatar -->
-                        {% if stream.host.profile_picture %}
-                        <img src="{{ stream.host.profile_picture.url }}" alt="{{ stream.host.get_full_name_display }}"
-                            class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg">
-                        {% else %}
-                        <div class="w-10 h-10 rounded-full bg-white ring-2 ring-white flex items-center justify-center text-red-600 font-bold text-lg shadow-lg">
-                            {{ stream.host.get_full_name_display|first|upper }}
+  <!-- Stream Container -->
+  <div class="stream-container">
+    <div class="stream-layout">
+      <!-- Video Section -->
+      <div class="video-section">
+        <!-- Stream Header - Red Gradient -->
+        <div class="video-header p-3 lg:p-4">
+          <div class="flex items-center gap-3">
+            <!-- Streamer Avatar -->
+            {% if stream.host.profile_picture %}
+            <img
+              src="{{ stream.host.profile_picture.url }}"
+              alt="{{ stream.host.get_full_name_display }}"
+              class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg"
+            />
+            {% else %}
+            <div
+              class="w-10 h-10 rounded-full bg-white ring-2 ring-white flex items-center justify-center text-red-600 font-bold text-lg shadow-lg"
+            >
+              {{ stream.host.get_full_name_display|first|upper }}
             </div>
             {% endif %}
 
-                        <!-- Streamer Info -->
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-white font-semibold text-sm truncate">{{ stream.host.get_full_name_display }}</span>
-                                <!-- LIVE Badge -->
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-red-600 text-xs font-bold rounded-full uppercase shadow">
-                                    <span class="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                                    LIVE
-                                </span>
-                            </div>
-                            <h1 class="text-white text-sm truncate mt-0.5">{{ stream.title }}</h1>
-        </div>
+            <!-- Streamer Info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-white font-semibold text-sm truncate"
+                  >{{ stream.host.get_full_name_display }}</span
+                >
+                <!-- LIVE Badge -->
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-red-600 text-xs font-bold rounded-full uppercase shadow"
+                >
+                  <span
+                    class="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"
+                  ></span>
+                  LIVE
+                </span>
+              </div>
+              <h1 class="text-white text-sm truncate mt-0.5">
+                {{ stream.title }}
+              </h1>
+            </div>
 
             {% if user == stream.host %}
-                        <!-- End Stream Button (Host only) -->
-                        <form method="post" action="{% url 'live:stream_end' stream.pk %}" class="ml-auto flex-shrink-0">
-                            {% csrf_token %}
-                            <button type="submit"
-                                class="px-3 py-1.5 bg-white hover:bg-gray-100 text-red-600 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 shadow">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
-                                </svg>
-                                หยุดไลฟ์
-                            </button>
-                        </form>
+            <!-- End Stream Button (Host only) -->
+            <form
+              method="post"
+              action="{% url 'live:stream_end' stream.pk %}"
+              class="ml-auto flex-shrink-0"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="px-3 py-1.5 bg-white hover:bg-gray-100 text-red-600 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 shadow"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                หยุดไลฟ์
+              </button>
+            </form>
             {% endif %}
+          </div>
         </div>
-    </div>
 
-                <!-- Video Player -->
-                <div class="video-player-wrapper">
-                    <div id="local-player"></div>
-                </div>
-            </div>
-
-            <!-- Chat Section - White Theme -->
-            <div class="chat-sidebar">
-
-                <!-- Chat Header -->
-                <div class="p-3 bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-between">
-                    <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
-                        💬 แชทสด
-                    </h2>
-                    <span id="viewer-count" class="text-xs font-medium text-red-600 bg-white px-2 py-1 rounded-full">
-                        0 คนดู
-                    </span>
-                </div>
-
-                <!-- Chat Messages -->
-                <div id="chat-messages" class="chat-messages flex-1 overflow-y-auto p-3 space-y-2">
-                    <!-- Welcome Message -->
-                    <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded-r">
-                        <p class="text-sm text-red-600 font-medium">ยินดีต้อนรับสู่แชทสด!</p>
-    </div>
-    </div>
-
-                <!-- Chat Input -->
-                <div class="chat-input-area p-3">
-                    <div class="flex gap-2">
-                        <input type="text" id="chat-input" placeholder="พิมพ์ข้อความ..."
-                            class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all">
-                        <button id="chat-send-btn" onclick="sendChatMessage()"
-                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors">
-                            ส่ง
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <!-- Video Player -->
+        <div class="video-player-wrapper">
+          <div id="local-player"></div>
         </div>
+      </div>
+
+      <!-- Chat Section - White Theme -->
+      <div class="chat-sidebar">
+        <!-- Chat Header -->
+        <div
+          class="p-3 bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-between"
+        >
+          <h2 class="font-semibold text-white flex items-center gap-2 text-sm">
+            แชทสด
+          </h2>
+        </div>
+
+        <!-- Chat Messages -->
+        <div
+          id="chat-messages"
+          class="chat-messages flex-1 overflow-y-auto p-3 space-y-2"
+        >
+          <!-- Welcome Message -->
+          <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded-r">
+            <p class="text-sm text-red-600 font-medium">
+              ยินดีต้อนรับสู่แชทสด!
+            </p>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-area p-3">
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="chat-input"
+              placeholder="พิมพ์ข้อความ..."
+              class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+            />
+            <button
+              id="chat-send-btn"
+              onclick="sendChatMessage()"
+              class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors"
+            >
+              ส่ง
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- ===== Agora Script ===== -->
 <script>
-    /* ===============================
-       Initial Variables
-    ================================ */
-    const isHost = {% if user == stream.host %}true{% else %} false{% endif %};
-    const channelName = "{{ stream.channel_name|escapejs }}";
-    const userUid = "{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}";
-    const currentUserId = "{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}";
-    const currentUserName = "{% if user.is_authenticated %}{{ user.get_full_name_display|escapejs }}{% else %}Guest{% endif %}";
-    const currentUserAvatar = "{% if user.is_authenticated and user.profile_picture %}{{ user.profile_picture.url }}{% endif %}";
-    const csrfToken = "{{ csrf_token }}";
+      /* ===============================
+         Initial Variables
+      ================================ */
+      const isHost = {% if user == stream.host %}true{% else %} false{% endif %};
+      const channelName = "{{ stream.channel_name|escapejs }}";
+      const userUid = "{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}";
+      const currentUserId = "{% if user.is_authenticated %}{{ user.id }}{% else %}guest{% endif %}";
+      const currentUserName = "{% if user.is_authenticated %}{{ user.get_full_name_display|escapejs }}{% else %}Guest{% endif %}";
+      const currentUserAvatar = "{% if user.is_authenticated and user.profile_picture %}{{ user.profile_picture.url }}{% endif %}";
+      const csrfToken = "{{ csrf_token }}";
 
-    console.log("Init:", { isHost, channelName, userUid });
+      console.log("Init:", { isHost, channelName, userUid });
 
-    /* ===============================
-       Agora Global State
-    ================================ */
-let client = null;
-let localTracks = {
-    videoTrack: null,
-    audioTrack: null
-};
+      /* ===============================
+         Agora Global State
+      ================================ */
+  let client = null;
+  let localTracks = {
+      videoTrack: null,
+      audioTrack: null
+  };
 
-    /* ===============================
-       Chat WebSocket
-    ================================ */
-    let chatWebSocket = null;
-    let viewerCount = 0;
+      /* ===============================
+         Chat WebSocket
+      ================================ */
+      let chatWebSocket = null;
 
-    function initChat() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/live/${channelName}/`;
+      function initChat() {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}/ws/live/${channelName}/`;
 
-        chatWebSocket = new WebSocket(wsUrl);
+          chatWebSocket = new WebSocket(wsUrl);
 
-        chatWebSocket.onopen = () => {
-            console.log('✅ Chat WebSocket connected');
-        };
+          chatWebSocket.onopen = () => {
+              console.log('✅ Chat WebSocket connected');
+          };
 
-        chatWebSocket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+          chatWebSocket.onmessage = (event) => {
+              const data = JSON.parse(event.data);
 
-            if (data.type === 'chat_message') {
-                addChatMessage(data.username, data.message, data.user_id, data.profile_picture, data.timestamp);
-            } else if (data.type === 'user_join') {
-                viewerCount++;
-                updateViewerCount();
-            }
-        };
+              if (data.type === 'chat_message') {
+                  addChatMessage(data.username, data.message, data.user_id, data.profile_picture, data.timestamp);
+              }
+          };
 
-        chatWebSocket.onerror = (error) => {
-            console.error('❌ Chat WebSocket error:', error);
-        };
+          chatWebSocket.onerror = (error) => {
+              console.error('❌ Chat WebSocket error:', error);
+          };
 
-        chatWebSocket.onclose = () => {
-            console.log('Chat WebSocket disconnected, reconnecting...');
-            setTimeout(() => initChat(), 3000);
-        };
-    }
+          chatWebSocket.onclose = () => {
+              console.log('Chat WebSocket disconnected, reconnecting...');
+              setTimeout(() => initChat(), 3000);
+          };
+      }
 
-    function sendChatMessage() {
-        const input = document.getElementById('chat-input');
-        const message = input.value.trim();
+      function sendChatMessage() {
+          const input = document.getElementById('chat-input');
+          const message = input.value.trim();
 
-        if (!message) return;
+          if (!message) return;
 
-        if (chatWebSocket && chatWebSocket.readyState === WebSocket.OPEN) {
-            chatWebSocket.send(JSON.stringify({
-                type: 'chat_message',
-                message: message
-            }));
+          if (chatWebSocket && chatWebSocket.readyState === WebSocket.OPEN) {
+              chatWebSocket.send(JSON.stringify({
+                  type: 'chat_message',
+                  message: message
+              }));
 
-            input.value = '';
-        } else {
-            console.error('Chat WebSocket is not connected');
-            alert('ไม่สามารถเชื่อมต่อแชทได้ กรุณารอสักครู่');
-        }
-    }
+              input.value = '';
+          } else {
+              console.error('Chat WebSocket is not connected');
+              alert('ไม่สามารถเชื่อมต่อแชทได้ กรุณารอสักครู่');
+          }
+      }
 
-    function addChatMessage(username, message, userId, profilePicture, timestamp) {
-        const messagesContainer = document.getElementById('chat-messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'flex gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg transition-colors';
+      function addChatMessage(username, message, userId, profilePicture, timestamp) {
+          const messagesContainer = document.getElementById('chat-messages');
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'flex gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg transition-colors';
 
-        const avatar = profilePicture || '';
+          const avatar = profilePicture || '';
 
-        messageDiv.innerHTML = `
-            ${avatar ?
-                `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(username)}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">` :
-                `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">${escapeHtml(username.charAt(0).toUpperCase())}</div>`
-            }
-            <div class="flex-1 min-w-0">
-                <span class="text-sm font-semibold text-red-600">${escapeHtml(username)}</span>
-                <p class="text-gray-700 text-sm break-words">${escapeHtml(message)}</p>
-            </div>
-        `;
+          messageDiv.innerHTML = `
+              ${avatar ?
+                  `<img src="${escapeHtml(avatar)}" alt="${escapeHtml(username)}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">` :
+                  `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">${escapeHtml(username.charAt(0).toUpperCase())}</div>`
+              }
+              <div class="flex-1 min-w-0">
+                  <span class="text-sm font-semibold text-red-600">${escapeHtml(username)}</span>
+                  <p class="text-gray-700 text-sm break-words">${escapeHtml(message)}</p>
+              </div>
+          `;
 
-        messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+          messagesContainer.appendChild(messageDiv);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
 
-    function updateViewerCount() {
-        const countEl = document.getElementById('viewer-count');
-        if (countEl) {
-            countEl.textContent = `${viewerCount} คนดู`;
-        }
-    }
+      function escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+      }
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+      // Allow Enter key to send message
+      document.addEventListener('DOMContentLoaded', () => {
+          const chatInput = document.getElementById('chat-input');
+          if (chatInput) {
+              chatInput.addEventListener('keypress', (e) => {
+                  if (e.key === 'Enter') {
+                      sendChatMessage();
+                          }
+              });
+          }
+      });
 
-    // Allow Enter key to send message
-    document.addEventListener('DOMContentLoaded', () => {
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendChatMessage();
-                        }
-            });
-        }
-    });
+      /* ===============================
+         Utils
+      ================================ */
+      async function getDroidCamDeviceId() {
+          const cameras = await AgoraRTC.getCameras();
+          console.log("Available cameras:", cameras);
 
-    /* ===============================
-       Utils
-    ================================ */
-    async function getDroidCamDeviceId() {
-        const cameras = await AgoraRTC.getCameras();
-        console.log("Available cameras:", cameras);
+          const cam = cameras.find(c =>
+              c.label && c.label.toLowerCase().includes("droidcam")
+          );
 
-        const cam = cameras.find(c =>
-            c.label && c.label.toLowerCase().includes("droidcam")
-        );
+          if (!cam) {
+              throw new Error("❌ ไม่พบ DroidCam กรุณาเปิด DroidCam ก่อน");
+          }
 
-        if (!cam) {
-            throw new Error("❌ ไม่พบ DroidCam กรุณาเปิด DroidCam ก่อน");
-        }
+          console.log("🎥 Using camera:", cam.label);
+          return cam.deviceId;
+      }
 
-        console.log("🎥 Using camera:", cam.label);
-        return cam.deviceId;
-    }
+      async function fetchAgoraToken() {
+          const res = await fetch("/live/api/token/", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": csrfToken
+              },
+              body: JSON.stringify({
+                  channel_name: channelName,
+                  uid: userUid,
+                  role: isHost ? 1 : 2
+              })
+          });
 
-    async function fetchAgoraToken() {
-        const res = await fetch("/live/api/token/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken
-            },
-            body: JSON.stringify({
-                channel_name: channelName,
-                uid: userUid,
-                role: isHost ? 1 : 2
-            })
-        });
+          if (!res.ok) {
+              throw new Error("Token API error");
+          }
 
-        if (!res.ok) {
-            throw new Error("Token API error");
-        }
+          return res.json();
+              }
 
-        return res.json();
-            }
+      /* ===============================
+         Init Agora
+      ================================ */
+      async function initAgora() {
+          console.log("🔥 initAgora START");
 
-    /* ===============================
-       Init Agora
-    ================================ */
-    async function initAgora() {
-        console.log("🔥 initAgora START");
+          const tokenData = await fetchAgoraToken();
 
-        const tokenData = await fetchAgoraToken();
+          client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
-        client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+          client.on("user-published", async (user, mediaType) => {
+      await client.subscribe(user, mediaType);
+              console.log("Subscribed to user:", user.uid, mediaType);
 
-        client.on("user-published", async (user, mediaType) => {
-    await client.subscribe(user, mediaType);
-            console.log("Subscribed to user:", user.uid, mediaType);
-    
-    if (mediaType === "video") {
-                user.videoTrack.play("local-player");
-    }
-    
-    if (mediaType === "audio") {
-        user.audioTrack.play();
-    }
-        });
+      if (mediaType === "video") {
+                  user.videoTrack.play("local-player");
+      }
 
-        AgoraRTC.onAudioAutoplayFailed = () => {
-            const btn = document.createElement("button");
-            btn.innerText = "🔊 คลิกเพื่อเปิดเสียง";
-            btn.className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-3 text-lg border-none rounded-full bg-red-600 text-white cursor-pointer shadow-lg hover:bg-red-700 transition-all";
+      if (mediaType === "audio") {
+          user.audioTrack.play();
+      }
+          });
 
-            document.getElementById("local-player").appendChild(btn);
+          AgoraRTC.onAudioAutoplayFailed = () => {
+              const btn = document.createElement("button");
+              btn.innerText = "🔊 คลิกเพื่อเปิดเสียง";
+              btn.className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-3 text-lg border-none rounded-full bg-red-600 text-white cursor-pointer shadow-lg hover:bg-red-700 transition-all";
 
-            btn.onclick = () => {
-                if (client && client.remoteUsers) {
-                    client.remoteUsers.forEach(user => {
-                        if (user.audioTrack) user.audioTrack.play();
-                    });
+              document.getElementById("local-player").appendChild(btn);
+
+              btn.onclick = () => {
+                  if (client && client.remoteUsers) {
+                      client.remoteUsers.forEach(user => {
+                          if (user.audioTrack) user.audioTrack.play();
+                      });
+                  }
+                  btn.remove();
+              };
+          };
+
+          client.on("user-unpublished", (user) => {
+              console.log("User unpublished:", user.uid);
+          });
+
+          await client.join(
+              tokenData.app_id,
+              channelName,
+              tokenData.token,
+              userUid
+          );
+
+          console.log("✅ Joined channel");
+
+          if (isHost) {
+              const cameraId = await getDroidCamDeviceId();
+
+              const devices = await AgoraRTC.getDevices();
+              const microphones = devices.filter(d => d.kind === "audioinput");
+
+              console.log("🎤 Available microphones:", microphones.map(m => ({
+                  label: m.label,
+                  deviceId: m.deviceId
+              })));
+
+              if (!microphones.length) {
+                  throw new Error("❌ ไม่พบไมโครโฟน กรุณาเช็คการเชื่อมต่อไมค์");
+              }
+
+              const mic =
+                  microphones.find(m => m.label && m.label.includes("Fantech")) ||
+                  microphones.find(m => m.label && m.label.includes("Realtek")) ||
+                  microphones[0];
+
+              console.log("🎤 Using microphone:", mic.label);
+
+              localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+                encoderConfig: {
+                sampleRate: 48000,
+                  stereo: false,
+                  bitrate: 32
                 }
-                btn.remove();
-            };
-        };
+              });   
 
-        client.on("user-unpublished", (user) => {
-            console.log("User unpublished:", user.uid);
-        });
+              localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
+                  cameraId,
+                  encoderConfig: "480p_1"
+              });
 
-        await client.join(
-            tokenData.app_id,
-            channelName,
-            tokenData.token,
-            userUid
-        );
+              await client.publish([
+                  localTracks.audioTrack,
+                  localTracks.videoTrack
+              ]);
 
-        console.log("✅ Joined channel");
+              console.log("📡 Published tracks");
 
-        if (isHost) {
-            const cameraId = await getDroidCamDeviceId();
+              localTracks.videoTrack.play("local-player");
+          }
+      }
 
-            const devices = await AgoraRTC.getDevices();
-            const microphones = devices.filter(d => d.kind === "audioinput");
+      /* ===============================
+         Controls
+      ================================ */
+      function toggleCamera() {
+      if (localTracks.videoTrack) {
+              const enabled = localTracks.videoTrack.isEnabled;
+              localTracks.videoTrack.setEnabled(!enabled);
+          }
+      }
 
-            console.log("🎤 Available microphones:", microphones.map(m => ({
-                label: m.label,
-                deviceId: m.deviceId
-            })));
+      function toggleMic() {
+      if (localTracks.audioTrack) {
+              const enabled = localTracks.audioTrack.isEnabled;
+              localTracks.audioTrack.setEnabled(!enabled);
+      }
+  }
 
-            if (!microphones.length) {
-                throw new Error("❌ ไม่พบไมโครโฟน กรุณาเช็คการเชื่อมต่อไมค์");
-            }
+      /* ===============================
+         Start
+      ================================ */
+      window.addEventListener("load", () => {
+          initAgora().catch(err => {
+              console.error("❌ Agora error:", err);
+              alert(err.message);
+          });
 
-            const mic =
-                microphones.find(m => m.label && m.label.includes("Fantech")) ||
-                microphones.find(m => m.label && m.label.includes("Realtek")) ||
-                microphones[0];
-
-            console.log("🎤 Using microphone:", mic.label);
-
-            localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-                microphoneId: mic.deviceId
-            });
-
-            localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack({
-                cameraId,
-                encoderConfig: "480p_1"
-            });
-
-            await client.publish([
-                localTracks.audioTrack,
-                localTracks.videoTrack
-            ]);
-
-            console.log("📡 Published tracks");
-
-            localTracks.videoTrack.play("local-player");
-        }
-    }
-
-    /* ===============================
-       Controls
-    ================================ */
-    function toggleCamera() {
-    if (localTracks.videoTrack) {
-            const enabled = localTracks.videoTrack.isEnabled;
-            localTracks.videoTrack.setEnabled(!enabled);
-        }
-    }
-
-    function toggleMic() {
-    if (localTracks.audioTrack) {
-            const enabled = localTracks.audioTrack.isEnabled;
-            localTracks.audioTrack.setEnabled(!enabled);
-    }
-}
-
-    /* ===============================
-       Start
-    ================================ */
-    window.addEventListener("load", () => {
-        initAgora().catch(err => {
-            console.error("❌ Agora error:", err);
-            alert(err.message);
-        });
-
-        initChat();
-    });
+          initChat();
+      });
 </script>
 {% endblock %}

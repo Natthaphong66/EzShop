@@ -8,7 +8,6 @@ from django.utils.html import strip_tags
 
 class Auction(models.Model):
     class Status(models.TextChoices):
-        SCHEDULED = 'scheduled', 'Scheduled'
         LIVE = 'live', 'Live'
         ENDED = 'ended', 'Ended'
         CANCELED = 'canceled', 'Canceled'
@@ -21,7 +20,7 @@ class Auction(models.Model):
     min_increment = models.DecimalField(max_digits=12, decimal_places=2)
     reserve_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.LIVE)
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
     ended_at = models.DateTimeField(null=True, blank=True)

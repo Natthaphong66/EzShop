@@ -19,17 +19,6 @@ class LiveChatConsumer(AsyncWebsocketConsumer):
             )
             
             await self.accept()
-            
-            # Notify others that user joined
-            user = self.scope.get('user')
-            if user and user.is_authenticated:
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'user_join',
-                        'username': user.get_full_name_display(),
-                    }
-                )
         except Exception as e:
             print(f"LiveChatConsumer connect error: {e}")
             await self.close()
@@ -84,11 +73,4 @@ class LiveChatConsumer(AsyncWebsocketConsumer):
             'user_id': event['user_id'],
             'profile_picture': event.get('profile_picture'),
             'timestamp': event['timestamp'],
-        }))
-    
-    async def user_join(self, event):
-        """Notify when user joins"""
-        await self.send(text_data=json.dumps({
-            'type': 'user_join',
-            'username': event['username'],
         }))

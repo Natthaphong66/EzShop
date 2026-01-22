@@ -131,22 +131,36 @@ class ShipOrderView(LoginRequiredMixin, View):
             return redirect('orders:order_detail', order_id=order_id)
         
         tracking_number = request.POST.get('tracking_number', '').strip()
-        shipping_carrier = request.POST.get('shipping_carrier', '').strip()
+        carrier_slug = request.POST.get('carrier_slug', '').strip()
         
-        if not tracking_number or not shipping_carrier:
-            messages.error(request, 'กรุณากรอกเลขพัสดุและชื่อบริษัทขนส่ง')
+        if not tracking_number or not carrier_slug:
+            messages.error(request, 'กรุณากรอกเลขพัสดุและเลือกบริษัทขนส่ง')
             return redirect('orders:order_detail', order_id=order_id)
+        
+        # หาชื่อบริษัทขนส่งจาก carrier_slug
+        carrier_display = dict(Order.CARRIER_CHOICES).get(carrier_slug, carrier_slug)
         
         # อัพเดท order
         from django.utils import timezone
         order.tracking_number = tracking_number
-        order.shipping_carrier = shipping_carrier
+        order.carrier_slug = carrier_slug
+        order.shipping_carrier = carrier_display
         order.shipped_at = timezone.now()
         order.status = Order.Status.SHIPPED
         order.save()
         
+        # สร้าง tracking ใน AfterShip (async, ไม่ต้องรอ)
+        try:
+            from .services import AfterShipService
+            service = AfterShipService()
+            if service.is_api_supported(carrier_slug):
+                service.create_tracking(tracking_number, carrier_slug)
+        except Exception:
+            pass  # ไม่ต้อง error ถ้า AfterShip ล้มเหลว
+        
         messages.success(request, 'ยืนยันการจัดส่งเรียบร้อยแล้ว')
         return redirect('orders:order_detail', order_id=order_id)
+
 
 
 class ConfirmReceivedView(LoginRequiredMixin, View):
@@ -164,6 +178,105 @@ class ConfirmReceivedView(LoginRequiredMixin, View):
         order.status = Order.Status.COMPLETED
         order.save()
         
-        messages.success(request, 'ยืนยันการรับสินค้าเรียบร้อยแล้ว ขอบคุณที่ใช้บริการ')
-        return redirect('orders:order_detail', order_id=order_id)
+        messages.success(request, 'ยืนยันการรับสินค้าเรียบร้อยแล้ว!')
+        # Redirect ไปหน้าเขียนรีวิว
+        return redirect('reviews:create_review', order_id=order_id)
+
+
+class TrackingView(LoginRequiredMixin, View):
+    """หน้าติดตามพัสดุ"""
+    
+    def get(self, request, order_id):
+        from django.db.models import Q
+        order = get_object_or_404(
+            Order.objects.filter(Q(buyer=request.user) | Q(seller=request.user)),
+            id=order_id
+        )
+        
+        # ต้องมีเลขพัสดุถึงจะดูได้
+        if not order.tracking_number:
+            messages.error(request, 'ยังไม่มีข้อมูลการจัดส่ง')
+            return redirect('orders:order_detail', order_id=order_id)
+        
+        # เตรียมข้อมูลสำหรับ template
+        from .services import AfterShipService
+        service = AfterShipService()
+        
+        context = {
+            'order': order,
+            'carrier_display': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.shipping_carrier),
+            'is_api_supported': service.is_api_supported(order.carrier_slug) if order.carrier_slug else False,
+            'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug) if order.carrier_slug else '',
+        }
+        
+        return render(request, 'orders/tracking.html', context)
+
+
+class TrackingAPIView(LoginRequiredMixin, View):
+    """API endpoint สำหรับดึงข้อมูล tracking จาก AfterShip"""
+    
+    def get(self, request, order_id):
+        from django.http import JsonResponse
+        from django.db.models import Q
+        
+        order = get_object_or_404(
+            Order.objects.filter(Q(buyer=request.user) | Q(seller=request.user)),
+            id=order_id
+        )
+        
+        if not order.tracking_number or not order.carrier_slug:
+            return JsonResponse({
+                'success': False,
+                'error': 'ไม่มีข้อมูลการจัดส่ง'
+            })
+        
+        from .services import AfterShipService
+        service = AfterShipService()
+        
+        # ตรวจสอบว่า carrier รองรับ API หรือไม่
+        if not service.is_api_supported(order.carrier_slug):
+            return JsonResponse({
+                'success': False,
+                'use_deep_link': True,
+                'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug),
+                'carrier_name': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.carrier_slug),
+            })
+        
+        # เรียก AfterShip API
+        result = service.get_tracking(order.tracking_number, order.carrier_slug)
+        
+        if result.get('success'):
+            data = result.get('data', {})
+            checkpoints = data.get('checkpoints', [])
+            
+            # แปลง checkpoints ให้อยู่ในรูปแบบที่ใช้งานง่าย
+            formatted_checkpoints = []
+            for cp in checkpoints:
+                formatted_checkpoints.append({
+                    'message': cp.get('message', cp.get('checkpoint_message', '')),
+                    'location': cp.get('location', cp.get('city', '')),
+                    'datetime': cp.get('checkpoint_time', ''),
+                    'tag': cp.get('tag', ''),
+                    'subtag': cp.get('subtag', ''),
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'data': {
+                    'tag': data.get('tag', 'Pending'),
+                    'tag_thai': service.translate_tag(data.get('tag', 'Pending')),
+                    'tag_color': service.get_tag_color(data.get('tag', 'Pending')),
+                    'subtag_message': data.get('subtag_message', ''),
+                    'checkpoints': formatted_checkpoints,
+                    'expected_delivery': data.get('expected_delivery'),
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'ไม่สามารถดึงข้อมูลได้'),
+                'use_deep_link': True,
+                'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug),
+            })
+
 

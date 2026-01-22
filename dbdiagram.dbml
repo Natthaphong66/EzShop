@@ -54,7 +54,7 @@ Table Auction {
   starting_price decimal(12,2) [not null]
   min_increment decimal(12,2) [not null]
   reserve_price decimal(12,2)
-  status varchar(20) [note: 'scheduled, live, ended, canceled']
+  status varchar(20) [note: 'live, ended, canceled']
   start_at datetime [not null]
   end_at datetime [not null]
   ended_at datetime
@@ -106,27 +106,18 @@ Table Message {
 // =====================
 Table Order {
   id uuid [pk]
-  reference_code varchar(10) [unique, note: 'EZ-XXXXXX']
   buyer_id uuid [ref: > User.id]
   seller_id uuid [ref: > User.id]
   product_id uuid [ref: > Product.id]
   amount decimal(10,2) [not null]
-  status varchar(20) [note: 'pending_payment, waiting_soft_verify, escrow_held, shipped, completed, disputed, cancelled']
+  status varchar(20) [note: 'pending_payment, escrow_held, shipped, completed, disputed, cancelled']
+  stripe_payment_intent_id varchar(255)
+  stripe_payment_status varchar(50)
+  tracking_number varchar(100)
+  shipping_carrier varchar(100)
+  shipped_at datetime
   created_at datetime
   updated_at datetime
-}
-
-Table PaymentSlip {
-  id uuid [pk]
-  order_id uuid [unique, ref: - Order.id]
-  image varchar(255) [not null]
-  uploaded_at datetime
-  verify_status varchar(15) [note: 'unverified, passed, mismatch, error']
-  verify_message text
-  ocr_raw_text text
-  ocr_amount decimal(10,2)
-  ocr_account varchar(50)
-  ocr_datetime datetime
 }
 
 // =====================

@@ -7,6 +7,19 @@ from django.db import models
 class Order(models.Model):
     """Order model for escrow-style payment flow."""
     
+    # AfterShip carrier slug mapping
+    CARRIER_CHOICES = [
+        ('thailand-post', 'ไปรษณีย์ไทย (Thailand Post)'),
+        ('kerry-express-thailand', 'KEX Express'),
+        ('flash-express', 'Flash Express'),
+        ('ninjavan-thailand', 'Ninja Van'),
+        ('dhl', 'DHL'),
+        ('shopee-express-thailand', 'Shopee Express'),
+        ('jtexpress-th', 'J&T Express'),
+        ('best-express', 'Best Express'),
+        ('other', 'อื่นๆ'),
+    ]
+    
     class Status(models.TextChoices):
         PENDING_PAYMENT = 'pending_payment', 'รอการชำระเงิน'
         ESCROW_HELD = 'escrow_held', 'เงินอยู่ในระบบ'
@@ -46,6 +59,7 @@ class Order(models.Model):
     # Shipping information
     tracking_number = models.CharField(max_length=100, blank=True, null=True, verbose_name='เลขพัสดุ')
     shipping_carrier = models.CharField(max_length=100, blank=True, null=True, verbose_name='บริษัทขนส่ง')
+    carrier_slug = models.CharField(max_length=50, blank=True, null=True, verbose_name='AfterShip Carrier Slug', choices=CARRIER_CHOICES)
     shipped_at = models.DateTimeField(blank=True, null=True, verbose_name='วันที่จัดส่ง')
     
     class Meta:
