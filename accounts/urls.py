@@ -1,7 +1,16 @@
 # accounts/urls.py
 from django.urls import path, include, reverse_lazy
 from django.contrib.auth import views as auth_views
-from .views import SignUpView, ProfileView, ProfileUpdateView, ProfileDeleteView, PasswordChangeView, ManageListingsView
+from .views import (
+    SignUpView,
+    ProfileView,
+    ProfileUpdateView,
+    ProfileDeleteView,
+    PasswordChangeView,
+    ManageListingsView,
+    AdminListingsView,
+    AdminListingActionView,
+)
 from .forms import CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm
 
 
@@ -15,6 +24,8 @@ urlpatterns = [
     path('delete/', ProfileDeleteView.as_view(), name='profile_delete'),
     path('password_change/',PasswordChangeView.as_view(),name='password_change' ),
     path('manage-listings/', ManageListingsView.as_view(), name='manage_listings'),
+    path('admin/listings/', AdminListingsView.as_view(), name='admin_listings'),
+    path('admin/listings/<uuid:pk>/action/', AdminListingActionView.as_view(), name='admin_listing_action'),
     
     # Password Reset Views
     path(

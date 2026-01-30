@@ -205,9 +205,18 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.end_at.label }}</label>
-                    {{ form.end_at }}
-                    <p class="text-xs text-slate-500 mt-1">เวลาเริ่มประมูลจะนับตั้งแต่กดลงขาย</p>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ระยะเวลาเปิดประมูล</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">{{ form.duration_hours.label }}</label>
+                            {{ form.duration_hours }}
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">{{ form.duration_minutes.label }}</label>
+                            {{ form.duration_minutes }}
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">กำหนดได้ระหว่าง 1–2 ชั่วโมง (เช่น 1 ชม. 30 นาที)</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.starting_price.label }}</label>

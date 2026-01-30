@@ -1,10 +1,13 @@
 from django.urls import reverse_lazy
 from django.views import generic
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import UpdateView, DeleteView
 from django.contrib.auth.views import PasswordChangeView as DjangoPasswordChangeView
 from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
 from .models import User
 from .forms import CustomUserCreationForm, ProfileUpdateForm
 
@@ -105,3 +108,88 @@ class ManageListingsView(LoginRequiredMixin, TemplateView):
         context['auctions'] = Auction.objects.filter(seller=user).order_by('-created_at')
         
         return context
+
+
+class StaffRequiredMixin(UserPassesTestMixin):
+    raise_exception = True
+
+    def test_func(self):
+        return self.request.user.is_authenticated and (
+            self.request.user.is_staff or self.request.user.is_superuser
+        )
+
+
+class AdminListingsView(StaffRequiredMixin, TemplateView):
+    template_name = 'accounts/admin_listings.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from products.models import Product
+
+        status_filter = self.request.GET.get('status', 'pending')
+        if status_filter == 'all':
+            products = Product.objects.all()
+        else:
+            products = Product.objects.filter(status=status_filter)
+
+        context['products'] = products.select_related('seller').order_by('-created_at')
+        context['status_filter'] = status_filter
+        context['count_pending'] = Product.objects.filter(status=Product.Status.PENDING).count()
+        context['count_approved'] = Product.objects.filter(status=Product.Status.APPROVED).count()
+        context['count_rejected'] = Product.objects.filter(status=Product.Status.REJECTED).count()
+        context['count_all'] = Product.objects.count()
+        return context
+
+
+class AdminListingActionView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        from products.models import Product
+        from notifications.services import notify_system
+
+        product = get_object_or_404(Product, pk=pk)
+        action = request.POST.get('action')
+        rejection_reason = request.POST.get('rejection_reason', '').strip()
+
+        if action == 'approve':
+            product.status = Product.Status.APPROVED
+            product.approved_at = timezone.now()
+            product.approved_by = request.user
+            product.rejected_at = None
+            product.rejected_by = None
+            product.rejection_reason = ''
+            product.save(update_fields=[
+                'status', 'approved_at', 'approved_by',
+                'rejected_at', 'rejected_by', 'rejection_reason'
+            ])
+            notify_system(
+                user=product.seller,
+                title='ประกาศได้รับการอนุมัติ',
+                message=f'ประกาศ "{product.name}" ได้รับการอนุมัติแล้ว',
+                link=product.get_absolute_url()
+            )
+            messages.success(request, 'อนุมัติประกาศเรียบร้อยแล้ว')
+        elif action == 'reject':
+            product.status = Product.Status.REJECTED
+            product.rejected_at = timezone.now()
+            product.rejected_by = request.user
+            product.rejection_reason = rejection_reason
+            product.approved_at = None
+            product.approved_by = None
+            product.save(update_fields=[
+                'status', 'rejected_at', 'rejected_by',
+                'rejection_reason', 'approved_at', 'approved_by'
+            ])
+            notify_system(
+                user=product.seller,
+                title='ประกาศถูกปฏิเสธ',
+                message=f'ประกาศ "{product.name}" ถูกปฏิเสธ{f" (เหตุผล: {rejection_reason})" if rejection_reason else ""}',
+                link=product.get_absolute_url()
+            )
+            messages.success(request, 'ปฏิเสธประกาศเรียบร้อยแล้ว')
+        elif action == 'delete':
+            product.delete()
+            messages.success(request, 'ลบประกาศเรียบร้อยแล้ว')
+        else:
+            messages.error(request, 'คำสั่งไม่ถูกต้อง')
+
+        return redirect(request.META.get('HTTP_REFERER', 'accounts:admin_listings'))

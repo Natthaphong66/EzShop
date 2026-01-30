@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 mt-2">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">แอดมินจัดการประกาศ</h1>
+            <p class="text-slate-500 mt-1">อนุมัติ ปฏิเสธ หรือ ลบประกาศขายสินค้า</p>
+        </div>
+    </div>
+
+    <div class="border-b border-slate-200 mb-6">
+        <nav class="-mb-px flex flex-wrap gap-6" aria-label="Tabs">
+            <a href="?status=pending"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm
+                {% if status_filter == 'pending' %}border-red-500 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                รออนุมัติ ({{ count_pending }})
+            </a>
+            <a href="?status=approved"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm
+                {% if status_filter == 'approved' %}border-red-500 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                อนุมัติแล้ว ({{ count_approved }})
+            </a>
+            <a href="?status=rejected"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm
+                {% if status_filter == 'rejected' %}border-red-500 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                ปฏิเสธแล้ว ({{ count_rejected }})
+            </a>
+            <a href="?status=all"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm
+                {% if status_filter == 'all' %}border-red-500 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                ทั้งหมด ({{ count_all }})
+            </a>
+        </nav>
+    </div>
+
+    {% if products %}
+    <div class="bg-white shadow overflow-hidden sm:rounded-md border border-slate-200">
+        <ul role="list" class="divide-y divide-slate-200">
+            {% for product in products %}
+            <li>
+                <div class="px-4 py-4 sm:px-6 hover:bg-slate-50 transition-colors">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div class="flex items-center min-w-0 gap-4">
+                            <div class="flex-shrink-0 h-16 w-16 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                                {% if product.image %}
+                                <img class="h-16 w-16 object-cover" src="{{ product.image.url }}" alt="{{ product.name }}">
+                                {% else %}
+                                <div class="h-full w-full flex items-center justify-center text-slate-400">
+                                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-slate-900 truncate">{{ product.name }}</p>
+                                <div class="flex flex-wrap items-center mt-1 gap-2">
+                                    <span class="text-sm text-slate-900 font-semibold">฿{{ product.price|intcomma }}</span>
+                                    <span class="text-slate-300">|</span>
+                                    <span class="text-xs text-slate-500">ผู้ขาย: {{ product.seller.get_full_name_display }}</span>
+                                    <span class="text-slate-300">|</span>
+                                    <span class="text-xs text-slate-500">ลงขายเมื่อ {{ product.created_at|date:"d M Y" }}</span>
+                                </div>
+                                {% if product.rejection_reason %}
+                                <p class="text-xs text-red-600 mt-1">เหตุผล: {{ product.rejection_reason }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if product.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif product.status == 'pending' %}bg-amber-100 text-amber-800
+                                {% elif product.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                {{ product.get_status_display }}
+                            </span>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{% url 'products:product_detail' product.pk %}"
+                                    class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100">ดูสินค้า</a>
+
+                                <form method="post" action="{% url 'accounts:admin_listing_action' product.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700">อนุมัติ</button>
+                                </form>
+
+                                <form method="post" action="{% url 'accounts:admin_listing_action' product.pk %}" class="flex items-center gap-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <input type="text" name="rejection_reason" placeholder="เหตุผล (ไม่บังคับ)"
+                                        class="px-2 py-1.5 text-xs border border-slate-200 rounded-lg w-40">
+                                    <button type="submit"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700">ปฏิเสธ</button>
+                                </form>
+
+                                <form method="post" action="{% url 'accounts:admin_listing_action' product.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <button type="submit"
+                                        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50">ลบ</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="text-center py-12 bg-white rounded-lg border border-slate-200 border-dashed">
+        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-slate-900">ไม่มีประกาศในสถานะนี้</h3>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

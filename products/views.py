@@ -9,6 +9,7 @@ from django.views.generic import (
     UpdateView,
 )
 from django.db.models import Q
+from django.utils import timezone
 
 from .forms import ProductForm
 from .models import Product, ProductImage
@@ -19,7 +20,7 @@ class HomePageView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         # Exclude products that have an associated auction (auction__isnull=False means has auction)
-        products = Product.objects.exclude(auction__isnull=False)
+        products = Product.objects.filter(status=Product.Status.APPROVED).exclude(auction__isnull=False)
         ctx["new_products"] = products.order_by("-created_at")[:6]  # 1 row (6 items in xl)
         ctx["featured_products"] = products.order_by("-price")[:6]
         ctx["spotlight_products"] = products.order_by("-updated_at")[:6]
@@ -44,7 +45,7 @@ class ProductListView(ListView):
 
     def get_queryset(self):
         # Base queryset excludes auction products
-        qs = Product.objects.exclude(auction__isnull=False)
+        qs = Product.objects.filter(status=Product.Status.APPROVED).exclude(auction__isnull=False)
         
         # Search functionality (search in name and category only)
         search_query = self.request.GET.get('q', '').strip()
@@ -74,6 +75,15 @@ class ProductDetailView(DetailView):
     template_name = "products/product_detail.html"
     context_object_name = "product"
 
+    def get_queryset(self):
+        qs = Product.objects.all()
+        user = self.request.user
+        if user.is_authenticated and (user.is_staff or user.is_superuser):
+            return qs
+        if user.is_authenticated:
+            return qs.filter(Q(status=Product.Status.APPROVED) | Q(seller=user))
+        return qs.filter(status=Product.Status.APPROVED)
+
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
@@ -83,6 +93,10 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.seller = self.request.user
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            form.instance.status = Product.Status.APPROVED
+            form.instance.approved_at = timezone.now()
+            form.instance.approved_by = self.request.user
         response = super().form_valid(form)
         
         # Handle multiple images
@@ -113,6 +127,13 @@ class ProductUpdateView(LoginRequiredMixin, ProductOwnerRequiredMixin, UpdateVie
     template_name = "products/product_form.html"
 
     def form_valid(self, form):
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            form.instance.status = Product.Status.PENDING
+            form.instance.approved_at = None
+            form.instance.approved_by = None
+            form.instance.rejected_at = None
+            form.instance.rejected_by = None
+            form.instance.rejection_reason = ""
         response = super().form_valid(form)
         
         # Handle image deletions

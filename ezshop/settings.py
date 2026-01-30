@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'notifications',
     'live',
     'reviews',
+    'dashboard',
 ]
 
 

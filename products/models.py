@@ -7,6 +7,11 @@ from django.db import models
 class Product(models.Model):
     """Simple listing that any user can create and manage."""
 
+    class Status(models.TextChoices):
+        PENDING = "pending", "รออนุมัติ"
+        APPROVED = "approved", "อนุมัติ"
+        REJECTED = "rejected", "ปฏิเสธ"
+
     class Condition(models.TextChoices):
         NEW = "new", "ใหม่"
         USED = "used", "มือสอง"
@@ -39,6 +44,28 @@ class Product(models.Model):
         default=Condition.NEW,
     )
     image = models.ImageField(upload_to="products/", blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_products",
+    )
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rejected_products",
+    )
+    rejection_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

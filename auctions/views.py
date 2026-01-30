@@ -6,6 +6,8 @@ from django.db import transaction
 from django.contrib import messages
 from django.http import JsonResponse
 from decimal import Decimal
+from django.utils import timezone
+from datetime import timedelta
 
 from .models import Auction, Bid
 from .forms import AuctionForm
@@ -18,10 +20,10 @@ class AuctionListView(ListView):
     context_object_name = 'auctions'
     
     def get_queryset(self):
-        from django.utils import timezone
         return Auction.objects.filter(
             status=Auction.Status.LIVE,
-            end_at__gt=timezone.now()
+            end_at__gt=timezone.now(),
+            product__status=Product.Status.APPROVED
         ).order_by('-created_at')
 
 class AuctionDetailView(DetailView):
@@ -31,8 +33,13 @@ class AuctionDetailView(DetailView):
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
+        user = self.request.user
+        if obj.product.status != Product.Status.APPROVED:
+            if not (user.is_authenticated and (user.is_staff or user.is_superuser or obj.seller_id == user.id)):
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied
+
         # Auto-close if expired but still marked as LIVE
-        from django.utils import timezone
         if obj.status == Auction.Status.LIVE and obj.end_at <= timezone.now():
             obj.close_auction()
         return obj
@@ -71,6 +78,10 @@ class AuctionCreateView(LoginRequiredMixin, CreateView):
                 product.seller = self.request.user
                 # Set product price to auction starting price
                 product.price = auction_data['starting_price']
+                if self.request.user.is_staff or self.request.user.is_superuser:
+                    product.status = Product.Status.APPROVED
+                    product.approved_at = timezone.now()
+                    product.approved_by = self.request.user
                 product.save()
                 
                 # Handle multiple images
@@ -93,8 +104,12 @@ class AuctionCreateView(LoginRequiredMixin, CreateView):
                 auction.seller = self.request.user
                 auction.status = Auction.Status.LIVE  # Set status to LIVE immediately
                 # Set start time to now (user only selects end time)
-                from django.utils import timezone
                 auction.start_at = timezone.now()
+                duration_minutes = (
+                    (form.cleaned_data.get('duration_hours') or 0) * 60
+                    + (form.cleaned_data.get('duration_minutes') or 0)
+                )
+                auction.end_at = auction.start_at + timedelta(minutes=duration_minutes)
                 auction.save()
                 
             return redirect(self.success_url)
@@ -110,6 +125,10 @@ class PlaceBidView(LoginRequiredMixin, View):
     
     def post(self, request, pk):
         auction = get_object_or_404(Auction, pk=pk)
+
+        if auction.product.status != Product.Status.APPROVED:
+            messages.error(request, 'ประกาศนี้ยังไม่ผ่านการอนุมัติ')
+            return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Validation 1: Check if user is not the seller
         if request.user == auction.seller:
@@ -118,7 +137,6 @@ class PlaceBidView(LoginRequiredMixin, View):
         
         # Validation 2: Check auction status is LIVE
         # Validation 2: Check auction status is LIVE and not expired
-        from django.utils import timezone
         if auction.status != Auction.Status.LIVE or auction.end_at <= timezone.now():
             if auction.status == Auction.Status.LIVE:
                 auction.close_auction() # Close it if it should be closed

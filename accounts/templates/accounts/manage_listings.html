@@ -75,11 +75,18 @@
                                         <span class="mx-2 text-slate-300">|</span>
                                         <p class="text-xs text-slate-500">ลงขายเมื่อ {{ product.created_at|date:"d M Y"}}</p>
                                     </div>
+                                    {% if product.status == 'rejected' and product.rejection_reason %}
+                                    <p class="text-xs text-red-600 mt-1">เหตุผล: {{ product.rejection_reason }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if product.status == 'published' %}bg-green-100 text-green-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if product.status == 'approved' %}bg-green-100 text-green-800
+                                        {% elif product.status == 'pending' %}bg-amber-100 text-amber-800
+                                        {% elif product.status == 'rejected' %}bg-red-100 text-red-800
+                                        {% else %}bg-slate-100 text-slate-800{% endif %}">
                                     {{ product.get_status_display }}
                                 </span>
                                 <div class="relative" x-data="{ open: false }">
