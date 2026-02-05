@@ -203,7 +203,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # Will be set af
 AGORA_APP_ID = os.getenv("AGORA_APP_ID", "").strip() if os.getenv("AGORA_APP_ID") else ""
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "").strip() if os.getenv("AGORA_APP_CERTIFICATE") else ""
 
-# AfterShip Settings
-AFTERSHIP_API_KEY = os.getenv("AFTERSHIP_API_KEY", "")
+# 17TRACK Tracking API Settings
+SEVENTEENTRACK_API_KEY = os.getenv("SEVENTEENTRACK_API_KEY", "")
 
 SERVER_EMAIL = EMAIL_HOST_USER

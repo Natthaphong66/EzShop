@@ -20,7 +20,7 @@ class HomePageView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         # Exclude products that have an associated auction (auction__isnull=False means has auction)
-        products = Product.objects.filter(status=Product.Status.APPROVED).exclude(auction__isnull=False)
+        products = Product.objects.filter(status=Product.Status.APPROVED, is_sold=False).exclude(auction__isnull=False)
         ctx["new_products"] = products.order_by("-created_at")[:6]  # 1 row (6 items in xl)
         ctx["featured_products"] = products.order_by("-price")[:6]
         ctx["spotlight_products"] = products.order_by("-updated_at")[:6]
@@ -45,7 +45,7 @@ class ProductListView(ListView):
 
     def get_queryset(self):
         # Base queryset excludes auction products
-        qs = Product.objects.filter(status=Product.Status.APPROVED).exclude(auction__isnull=False)
+        qs = Product.objects.filter(status=Product.Status.APPROVED, is_sold=False).exclude(auction__isnull=False)
         
         # Search functionality (search in name and category only)
         search_query = self.request.GET.get('q', '').strip()
@@ -81,8 +81,8 @@ class ProductDetailView(DetailView):
         if user.is_authenticated and (user.is_staff or user.is_superuser):
             return qs
         if user.is_authenticated:
-            return qs.filter(Q(status=Product.Status.APPROVED) | Q(seller=user))
-        return qs.filter(status=Product.Status.APPROVED)
+            return qs.filter(Q(status=Product.Status.APPROVED, is_sold=False) | Q(seller=user))
+        return qs.filter(status=Product.Status.APPROVED, is_sold=False)
 
 
 class ProductCreateView(LoginRequiredMixin, CreateView):

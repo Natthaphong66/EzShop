@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.urls import reverse
+from django.db import transaction
 
 from .models import Order
 from products.models import Product
@@ -17,6 +18,27 @@ class CreateOrderView(LoginRequiredMixin, View):
         # ห้ามซื้อสินค้าตัวเอง
         if product.seller == request.user:
             messages.error(request, 'ไม่สามารถซื้อสินค้าของตัวเองได้')
+            return redirect('products:product_detail', pk=product_id)
+
+        # สินค้าขายไปแล้ว
+        if product.is_sold:
+            messages.error(request, 'สินค้านี้ถูกขายไปแล้ว')
+            return redirect('products:product_detail', pk=product_id)
+
+        # เช็คว่ามี order ที่ยังไม่เสร็จอยู่หรือไม่ (ทุกผู้ซื้อ)
+        product_active_order = Order.objects.filter(
+            product=product,
+            status__in=[
+                Order.Status.PENDING_PAYMENT,
+                Order.Status.ESCROW_HELD,
+                Order.Status.SHIPPED,
+                Order.Status.COMPLETED,
+            ]
+        ).first()
+        if product_active_order:
+            if product_active_order.buyer_id == request.user.id:
+                return redirect('orders:order_detail', order_id=product_active_order.id)
+            messages.error(request, 'สินค้านี้มีผู้ทำรายการอยู่แล้ว')
             return redirect('products:product_detail', pk=product_id)
         
         # เช็คว่ามี order ที่ยังไม่เสร็จอยู่หรือไม่
@@ -39,21 +61,43 @@ class CreateOrderView(LoginRequiredMixin, View):
         return render(request, 'orders/create_order.html', context)
     
     def post(self, request, product_id):
-        product = get_object_or_404(Product, id=product_id)
+        with transaction.atomic():
+            product = get_object_or_404(Product.objects.select_for_update(), id=product_id)
         
-        # ห้ามซื้อสินค้าตัวเอง
-        if product.seller == request.user:
-            messages.error(request, 'ไม่สามารถซื้อสินค้าของตัวเองได้')
-            return redirect('products:product_detail', pk=product_id)
+            # ห้ามซื้อสินค้าตัวเอง
+            if product.seller == request.user:
+                messages.error(request, 'ไม่สามารถซื้อสินค้าของตัวเองได้')
+                return redirect('products:product_detail', pk=product_id)
+
+            # สินค้าขายไปแล้ว
+            if product.is_sold:
+                messages.error(request, 'สินค้านี้ถูกขายไปแล้ว')
+                return redirect('products:product_detail', pk=product_id)
+
+            # เช็คว่ามี order ที่ยังไม่เสร็จอยู่หรือไม่ (ทุกผู้ซื้อ)
+            product_active_order = Order.objects.filter(
+                product=product,
+                status__in=[
+                    Order.Status.PENDING_PAYMENT,
+                    Order.Status.ESCROW_HELD,
+                    Order.Status.SHIPPED,
+                    Order.Status.COMPLETED,
+                ]
+            ).first()
+            if product_active_order:
+                if product_active_order.buyer_id == request.user.id:
+                    return redirect('orders:order_detail', order_id=product_active_order.id)
+                messages.error(request, 'สินค้านี้มีผู้ทำรายการอยู่แล้ว')
+                return redirect('products:product_detail', pk=product_id)
         
-        # สร้าง Order ใหม่
-        order = Order.objects.create(
-            buyer=request.user,
-            seller=product.seller,
-            product=product,
-            amount=product.price,
-            status=Order.Status.PENDING_PAYMENT,
-        )
+            # สร้าง Order ใหม่
+            order = Order.objects.create(
+                buyer=request.user,
+                seller=product.seller,
+                product=product,
+                amount=product.price,
+                status=Order.Status.PENDING_PAYMENT,
+            )
         
         messages.success(request, 'สร้างคำสั่งซื้อเรียบร้อย กรุณาชำระเงิน')
         return redirect('orders:order_detail', order_id=order.id)
@@ -149,14 +193,13 @@ class ShipOrderView(LoginRequiredMixin, View):
         order.status = Order.Status.SHIPPED
         order.save()
         
-        # สร้าง tracking ใน AfterShip (async, ไม่ต้องรอ)
+        # Register tracking with 17TRACK (async, ไม่ต้องรอ)
         try:
-            from .services import AfterShipService
-            service = AfterShipService()
-            if service.is_api_supported(carrier_slug):
-                service.create_tracking(tracking_number, carrier_slug)
+            from .services import TrackingService
+            service = TrackingService()
+            service.create_tracking(tracking_number, carrier_slug)
         except Exception:
-            pass  # ไม่ต้อง error ถ้า AfterShip ล้มเหลว
+            pass  # ไม่ต้อง error ถ้า tracking registration ล้มเหลว
         
         messages.success(request, 'ยืนยันการจัดส่งเรียบร้อยแล้ว')
         return redirect('orders:order_detail', order_id=order_id)
@@ -199,8 +242,8 @@ class TrackingView(LoginRequiredMixin, View):
             return redirect('orders:order_detail', order_id=order_id)
         
         # เตรียมข้อมูลสำหรับ template
-        from .services import AfterShipService
-        service = AfterShipService()
+        from .services import TrackingService
+        service = TrackingService()
         
         context = {
             'order': order,
@@ -213,7 +256,7 @@ class TrackingView(LoginRequiredMixin, View):
 
 
 class TrackingAPIView(LoginRequiredMixin, View):
-    """API endpoint สำหรับดึงข้อมูล tracking จาก AfterShip"""
+    """API endpoint สำหรับดึงข้อมูล tracking จาก 17TRACK"""
     
     def get(self, request, order_id):
         from django.http import JsonResponse
@@ -230,8 +273,8 @@ class TrackingAPIView(LoginRequiredMixin, View):
                 'error': 'ไม่มีข้อมูลการจัดส่ง'
             })
         
-        from .services import AfterShipService
-        service = AfterShipService()
+        from .services import TrackingService
+        service = TrackingService()
         
         # ตรวจสอบว่า carrier รองรับ API หรือไม่
         if not service.is_api_supported(order.carrier_slug):
@@ -242,20 +285,20 @@ class TrackingAPIView(LoginRequiredMixin, View):
                 'carrier_name': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.carrier_slug),
             })
         
-        # เรียก AfterShip API
+        # เรียก 17TRACK API
         result = service.get_tracking(order.tracking_number, order.carrier_slug)
         
         if result.get('success'):
             data = result.get('data', {})
             checkpoints = data.get('checkpoints', [])
             
-            # แปลง checkpoints ให้อยู่ในรูปแบบที่ใช้งานง่าย
+            # Format checkpoints for frontend (already in correct format from 17TRACK service)
             formatted_checkpoints = []
             for cp in checkpoints:
                 formatted_checkpoints.append({
-                    'message': cp.get('message', cp.get('checkpoint_message', '')),
-                    'location': cp.get('location', cp.get('city', '')),
-                    'datetime': cp.get('checkpoint_time', ''),
+                    'message': cp.get('message', ''),
+                    'location': cp.get('location', ''),
+                    'datetime': cp.get('datetime', ''),
                     'tag': cp.get('tag', ''),
                     'subtag': cp.get('subtag', ''),
                 })
@@ -264,8 +307,8 @@ class TrackingAPIView(LoginRequiredMixin, View):
                 'success': True,
                 'data': {
                     'tag': data.get('tag', 'Pending'),
-                    'tag_thai': service.translate_tag(data.get('tag', 'Pending')),
-                    'tag_color': service.get_tag_color(data.get('tag', 'Pending')),
+                    'tag_thai': data.get('tag_thai', service.translate_tag(data.get('tag', 'Pending'))),
+                    'tag_color': data.get('tag_color', service.get_tag_color(data.get('tag', 'Pending'))),
                     'subtag_message': data.get('subtag_message', ''),
                     'checkpoints': formatted_checkpoints,
                     'expected_delivery': data.get('expected_delivery'),

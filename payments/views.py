@@ -106,6 +106,11 @@ class StripeWebhookView(View):
                     order.stripe_payment_status = session.payment_status
                     order.status = Order.Status.ESCROW_HELD
                     order.save()
+
+                    # Mark product as sold
+                    if not order.product.is_sold:
+                        order.product.is_sold = True
+                        order.product.save(update_fields=["is_sold"])
                     
                     # Send notifications (if notification service exists)
                     try:

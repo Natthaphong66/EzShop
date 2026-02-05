@@ -23,7 +23,8 @@ class AuctionListView(ListView):
         return Auction.objects.filter(
             status=Auction.Status.LIVE,
             end_at__gt=timezone.now(),
-            product__status=Product.Status.APPROVED
+            product__status=Product.Status.APPROVED,
+            product__is_sold=False
         ).order_by('-created_at')
 
 class AuctionDetailView(DetailView):

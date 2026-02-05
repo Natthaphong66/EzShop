@@ -63,6 +63,16 @@ def handle_auction_winner(auction, winner):
         )
         chat_room.participants.add(winner, auction.seller)
     
+    # ป้องกันการสร้างซ้ำถ้าสินค้าถูกขายไปแล้ว
+    if auction.product.is_sold:
+        existing_order = Order.objects.filter(
+            product=auction.product
+        ).order_by('-created_at').first()
+        return {
+            'order': existing_order,
+            'chat_room': chat_room,
+        }
+
     # 1. สร้าง Order อัตโนมัติ
     order = Order.objects.create(
         buyer=winner,

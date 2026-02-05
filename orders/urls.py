@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .webhook_views import SeventeenTrackWebhookView
 
 app_name = 'orders'
 
@@ -13,5 +14,8 @@ urlpatterns = [
     path('<uuid:order_id>/tracking/api/', views.TrackingAPIView.as_view(), name='tracking_api'),
     path('my-orders/', views.MyOrdersView.as_view(), name='my_orders'),
     path('my-sales/', views.MySalesView.as_view(), name='my_sales'),
+    
+    # 17TRACK Webhook endpoint
+    path('webhooks/17track/', SeventeenTrackWebhookView.as_view(), name='seventeentrack_webhook'),
 ]
 
