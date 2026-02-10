@@ -21,8 +21,9 @@ class Auction(models.Model):
     reserve_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.LIVE)
-    start_at = models.DateTimeField()
-    end_at = models.DateTimeField()
+    duration_minutes = models.PositiveIntegerField(default=60, help_text='Auction duration in minutes, timer starts after admin approval')
+    start_at = models.DateTimeField(null=True, blank=True)
+    end_at = models.DateTimeField(null=True, blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     
     winner_bid = models.OneToOneField('Bid', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auction')

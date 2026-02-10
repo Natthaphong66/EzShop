@@ -3,14 +3,14 @@ from .models import Auction
 
 class AuctionForm(forms.ModelForm):
     duration_hours = forms.IntegerField(
-        min_value=1,
-        max_value=2,
-        initial=1,
+        min_value=0,
+        max_value=168,
+        initial=0,
         label="ชั่วโมง",
         widget=forms.NumberInput(attrs={
             'class': 'w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-black focus:ring-1 focus:ring-black transition-colors',
-            'min': '1',
-            'max': '2'
+            'min': '0',
+            'max': '168'
         })
     )
     duration_minutes = forms.IntegerField(
@@ -53,6 +53,6 @@ class AuctionForm(forms.ModelForm):
         hours = cleaned_data.get('duration_hours') or 0
         minutes = cleaned_data.get('duration_minutes') or 0
         total_minutes = (hours * 60) + minutes
-        if total_minutes < 60 or total_minutes > 120:
-            raise forms.ValidationError('ระยะเวลาประมูลต้องอยู่ระหว่าง 1 ถึง 2 ชั่วโมง')
+        if total_minutes < 1 or total_minutes > 10080:
+            raise forms.ValidationError('ระยะเวลาประมูลต้องอยู่ระหว่าง 1 นาที ถึง 7 วัน')
         return cleaned_data

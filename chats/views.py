@@ -167,7 +167,7 @@ class StartProductChatView(LoginRequiredMixin, View):
         
         # Don't allow chatting with yourself
         if product.seller == request.user:
-            return redirect('products:detail', pk=product_id)
+            return redirect('products:product_detail', pk=product_id)
         
         room = self.get_or_create_room(request, product)
         return redirect('chats:room', room_id=room.id)
@@ -178,7 +178,7 @@ class StartProductChatView(LoginRequiredMixin, View):
         
         # Don't allow chatting with yourself
         if product.seller == request.user:
-            return redirect('products:detail', pk=product_id)
+            return redirect('products:product_detail', pk=product_id)
         
         room = self.get_or_create_room(request, product)
         

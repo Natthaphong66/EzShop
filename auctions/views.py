@@ -22,6 +22,7 @@ class AuctionListView(ListView):
     def get_queryset(self):
         return Auction.objects.filter(
             status=Auction.Status.LIVE,
+            end_at__isnull=False,
             end_at__gt=timezone.now(),
             product__status=Product.Status.APPROVED,
             product__is_sold=False
@@ -41,7 +42,7 @@ class AuctionDetailView(DetailView):
                 raise PermissionDenied
 
         # Auto-close if expired but still marked as LIVE
-        if obj.status == Auction.Status.LIVE and obj.end_at <= timezone.now():
+        if obj.status == Auction.Status.LIVE and obj.end_at and obj.end_at <= timezone.now():
             obj.close_auction()
         return obj
 
@@ -103,14 +104,22 @@ class AuctionCreateView(LoginRequiredMixin, CreateView):
                 auction = form.save(commit=False)
                 auction.product = product
                 auction.seller = self.request.user
-                auction.status = Auction.Status.LIVE  # Set status to LIVE immediately
-                # Set start time to now (user only selects end time)
-                auction.start_at = timezone.now()
                 duration_minutes = (
                     (form.cleaned_data.get('duration_hours') or 0) * 60
                     + (form.cleaned_data.get('duration_minutes') or 0)
                 )
-                auction.end_at = auction.start_at + timedelta(minutes=duration_minutes)
+                auction.duration_minutes = duration_minutes
+
+                if self.request.user.is_staff or self.request.user.is_superuser:
+                    # Admin/staff: product is auto-approved, start timer immediately
+                    auction.status = Auction.Status.LIVE
+                    auction.start_at = timezone.now()
+                    auction.end_at = auction.start_at + timedelta(minutes=duration_minutes)
+                else:
+                    # Regular user: wait for admin approval before starting timer
+                    auction.status = Auction.Status.LIVE
+                    auction.start_at = None
+                    auction.end_at = None
                 auction.save()
                 
             return redirect(self.success_url)
@@ -138,10 +147,10 @@ class PlaceBidView(LoginRequiredMixin, View):
         
         # Validation 2: Check auction status is LIVE
         # Validation 2: Check auction status is LIVE and not expired
-        if auction.status != Auction.Status.LIVE or auction.end_at <= timezone.now():
-            if auction.status == Auction.Status.LIVE:
+        if auction.status != Auction.Status.LIVE or not auction.end_at or auction.end_at <= timezone.now():
+            if auction.status == Auction.Status.LIVE and auction.end_at and auction.end_at <= timezone.now():
                 auction.close_auction() # Close it if it should be closed
-            messages.error(request, 'การประมูลนี้จบลงแล้ว')
+            messages.error(request, 'การประมูลนี้ยังไม่เริ่มหรือจบลงแล้ว')
             return redirect('auctions:auction_detail', pk=auction.pk)
         
         # Get bid amount from form

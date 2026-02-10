@@ -94,8 +94,8 @@ class AuctionConsumer(AsyncWebsocketConsumer):
                 'current_price': str(current_price),
                 'bid_count': auction.bids.count(),
                 'status': auction.status,
-                'end_at': auction.end_at.isoformat(),
-                'is_ended': auction.status == Auction.Status.ENDED or auction.end_at <= timezone.now(),
+                'end_at': auction.end_at.isoformat() if auction.end_at else None,
+                'is_ended': auction.status == Auction.Status.ENDED or (auction.end_at is not None and auction.end_at <= timezone.now()),
             }
         except Auction.DoesNotExist:
             return None

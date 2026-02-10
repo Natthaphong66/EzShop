@@ -217,8 +217,12 @@
 
     async function loadDevices() {
         try {
+            // ขอ permission ก่อน แล้ว stop ทันที
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             stream.getTracks().forEach(track => track.stop());
+
+            // รอให้กล้อง release สักครู่ก่อนให้ Agora เข้าถึง
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             const devices = await AgoraRTC.getDevices();
             const cameras = devices.filter(d => d.kind === "videoinput");
@@ -226,22 +230,58 @@
 
             // Populate dropdowns
             const cameraSelect = document.getElementById("camera-select");
-            cameraSelect.innerHTML = cameras.map((cam, i) =>
-                `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
-            ).join("");
+            if (cameras.length === 0) {
+                cameraSelect.innerHTML = '<option value="">ไม่พบกล้อง</option>';
+            } else {
+                cameraSelect.innerHTML = cameras.map((cam, i) =>
+                    `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
+                ).join("");
+            }
 
             const micSelect = document.getElementById("mic-select");
-            micSelect.innerHTML = mics.map((mic, i) =>
-                `<option value="${mic.deviceId}">${mic.label || `Microphone ${i + 1}`}</option>`
-            ).join("");
+            if (mics.length === 0) {
+                micSelect.innerHTML = '<option value="">ไม่พบไมโครโฟน</option>';
+            } else {
+                micSelect.innerHTML = mics.map((mic, i) =>
+                    `<option value="${mic.deviceId}">${mic.label || `Microphone ${i + 1}`}</option>`
+                ).join("");
+            }
 
             if (cameras.length > 0 && mics.length > 0) {
                 await startPreview(cameras[0].deviceId, mics[0].deviceId);
+            } else {
+                document.getElementById("preview-loading").innerHTML = `
+                    <div class="text-center">
+                        <p class="text-red-400 text-lg mb-2">ไม่พบอุปกรณ์</p>
+                        <p class="text-slate-500 text-sm">ไม่พบกล้องหรือไมโครโฟน</p>
+                    </div>`;
             }
 
         } catch (err) {
             console.error("Error loading devices:", err);
-            alert("ไม่สามารถเข้าถึงกล้องหรือไมค์ได้ กรุณาอนุญาตการใช้งาน");
+            const loadingEl = document.getElementById("preview-loading");
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                loadingEl.innerHTML = `
+                    <div class="text-center px-4">
+                        <p class="text-red-400 text-lg mb-2">ไม่ได้รับอนุญาต</p>
+                        <p class="text-slate-500 text-sm mb-4">กรุณาอนุญาตการเข้าถึงกล้องและไมโครโฟนในเบราว์เซอร์</p>
+                        <button onclick="loadDevices()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลองใหม่</button>
+                    </div>`;
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                loadingEl.innerHTML = `
+                    <div class="text-center px-4">
+                        <p class="text-red-400 text-lg mb-2">ไม่พบอุปกรณ์</p>
+                        <p class="text-slate-500 text-sm mb-4">ไม่พบกล้องหรือไมโครโฟนที่เชื่อมต่ออยู่</p>
+                        <button onclick="loadDevices()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลองใหม่</button>
+                    </div>`;
+            } else {
+                loadingEl.innerHTML = `
+                    <div class="text-center px-4">
+                        <p class="text-red-400 text-lg mb-2">เกิดข้อผิดพลาด</p>
+                        <p class="text-slate-500 text-sm mb-4">${err.message || 'ไม่สามารถเข้าถึงกล้องหรือไมค์ได้'}</p>
+                        <button onclick="loadDevices()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลองใหม่</button>
+                    </div>`;
+            }
         }
     }
 
@@ -265,6 +305,14 @@
 
         } catch (err) {
             console.error("Preview error:", err);
+            const loadingEl = document.getElementById("preview-loading");
+            loadingEl.classList.remove("hidden");
+            loadingEl.innerHTML = `
+                <div class="text-center px-4">
+                    <p class="text-red-400 text-lg mb-2">ไม่สามารถเปิดกล้อง/ไมค์ได้</p>
+                    <p class="text-slate-500 text-sm mb-4">${err.message || 'อุปกรณ์อาจถูกใช้งานอยู่โดยแอปอื่น'}</p>
+                    <button onclick="loadDevices()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลองใหม่</button>
+                </div>`;
         }
     }
 

@@ -101,8 +101,8 @@ class ManageListingsView(LoginRequiredMixin, TemplateView):
         from products.models import Product
         from auctions.models import Auction
         
-        # Fetch Marketplace Products
-        context['products'] = Product.objects.filter(seller=user).order_by('-created_at')
+        # Fetch Marketplace Products (exclude auctions)
+        context['products'] = Product.objects.filter(seller=user, auction__isnull=True).order_by('-created_at')
         
         # Fetch Auctions
         context['auctions'] = Auction.objects.filter(seller=user).order_by('-created_at')
@@ -127,17 +127,33 @@ class AdminListingsView(StaffRequiredMixin, TemplateView):
         from products.models import Product
 
         status_filter = self.request.GET.get('status', 'pending')
+        type_filter = self.request.GET.get('type', 'marketplace')
+
         if status_filter == 'all':
             products = Product.objects.all()
         else:
             products = Product.objects.filter(status=status_filter)
 
+        # Filter by type: marketplace (no auction) or auction (has auction)
+        if type_filter == 'auction':
+            products = products.filter(auction__isnull=False)
+        else:
+            products = products.filter(auction__isnull=True)
+
         context['products'] = products.select_related('seller').order_by('-created_at')
         context['status_filter'] = status_filter
-        context['count_pending'] = Product.objects.filter(status=Product.Status.PENDING).count()
-        context['count_approved'] = Product.objects.filter(status=Product.Status.APPROVED).count()
-        context['count_rejected'] = Product.objects.filter(status=Product.Status.REJECTED).count()
-        context['count_all'] = Product.objects.count()
+        context['type_filter'] = type_filter
+
+        # Counts based on type filter
+        if type_filter == 'auction':
+            base_qs = Product.objects.filter(auction__isnull=False)
+        else:
+            base_qs = Product.objects.filter(auction__isnull=True)
+
+        context['count_pending'] = base_qs.filter(status=Product.Status.PENDING).count()
+        context['count_approved'] = base_qs.filter(status=Product.Status.APPROVED).count()
+        context['count_rejected'] = base_qs.filter(status=Product.Status.REJECTED).count()
+        context['count_all'] = base_qs.count()
         return context
 
 
@@ -161,6 +177,15 @@ class AdminListingActionView(StaffRequiredMixin, View):
                 'status', 'approved_at', 'approved_by',
                 'rejected_at', 'rejected_by', 'rejection_reason'
             ])
+
+            # Start auction timer if product has an auction that hasn't started yet
+            if hasattr(product, 'auction') and product.auction.start_at is None:
+                from datetime import timedelta
+                auction = product.auction
+                auction.start_at = timezone.now()
+                auction.end_at = auction.start_at + timedelta(minutes=auction.duration_minutes)
+                auction.save(update_fields=['start_at', 'end_at'])
+
             notify_system(
                 user=product.seller,
                 title='ประกาศได้รับการอนุมัติ',
@@ -187,8 +212,11 @@ class AdminListingActionView(StaffRequiredMixin, View):
             )
             messages.success(request, 'ปฏิเสธประกาศเรียบร้อยแล้ว')
         elif action == 'delete':
-            product.delete()
-            messages.success(request, 'ลบประกาศเรียบร้อยแล้ว')
+            try:
+                product.delete()
+                messages.success(request, 'ลบประกาศเรียบร้อยแล้ว')
+            except Exception:
+                messages.error(request, 'ไม่สามารถลบประกาศนี้ได้ เนื่องจากมีคำสั่งซื้อที่เกี่ยวข้อง กรุณาลบคำสั่งซื้อก่อน')
         else:
             messages.error(request, 'คำสั่งไม่ถูกต้อง')
 

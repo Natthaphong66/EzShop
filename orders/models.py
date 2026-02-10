@@ -44,7 +44,9 @@ class Order(models.Model):
     )
     product = models.ForeignKey(
         'products.Product',
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='orders',
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -74,7 +76,8 @@ class Order(models.Model):
         ]
     
     def __str__(self):
-        return f"Order {self.id} - {self.product.name}"
+        product_name = self.product.name if self.product else '(สินค้าถูกลบ)'
+        return f"Order {self.id} - {product_name}"
 
 
 class TrackingEvent(models.Model):

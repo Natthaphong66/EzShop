@@ -12,10 +12,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import importlib.util
+import shutil
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 # Quick-start development settings - unsuitable for production
@@ -93,8 +103,10 @@ ASGI_APPLICATION = 'ezshop.asgi.application'
 
 # Channel Layers - Use Redis for production, InMemory for development
 REDIS_URL = os.getenv("REDIS_URL", None)
+USE_REDIS = env_bool("USE_REDIS", False)
+HAS_CHANNELS_REDIS = importlib.util.find_spec("channels_redis") is not None
 
-if REDIS_URL:
+if USE_REDIS and REDIS_URL and HAS_CHANNELS_REDIS:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -114,6 +126,9 @@ else:
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+DB_ENGINE = os.getenv("DB_ENGINE", "postgres").strip().lower()
+if DB_ENGINE not in {"postgres", "postgresql"}:
+    raise ImproperlyConfigured("DB_ENGINE must be 'postgres' or 'postgresql'.")
 
 DATABASES = {
     "default": {
@@ -175,7 +190,7 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TAILWIND_APP_NAME = "theme"
-NPM_BIN_PATH = "/usr/bin/npm"
+NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", shutil.which("npm") or "/usr/bin/npm")
 
 AUTH_USER_MODEL = 'accounts.User'
 MEDIA_URL = '/media/'

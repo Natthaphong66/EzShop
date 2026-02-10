@@ -91,8 +91,8 @@
         </div>
       </div>
 
-      <!-- Chat Section -->
-      {% if user.is_authenticated and product.seller != user %}
+      <!-- Chat Section (hidden for admin/staff) -->
+      {% if user.is_authenticated and product.seller != user and not user.is_staff %}
       <div class="mt-4 border-t border-slate-200 pt-6">
         <h3 class="text-lg font-bold text-slate-900 mb-2">แชท</h3>
         <p class="text-slate-500 text-sm mb-4">ส่งข้อความของคุณหาผู้ขายเลย หากสนใจสินค้านี้</p>
