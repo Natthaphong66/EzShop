@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import json
 import importlib.util
 import shutil
 from django.core.exceptions import ImproperlyConfigured
@@ -38,6 +39,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 
 ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app']
 
 
 # Application definition
@@ -218,7 +220,14 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")  # Will be set af
 AGORA_APP_ID = os.getenv("AGORA_APP_ID", "").strip() if os.getenv("AGORA_APP_ID") else ""
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "").strip() if os.getenv("AGORA_APP_CERTIFICATE") else ""
 
-# 17TRACK Tracking API Settings
-SEVENTEENTRACK_API_KEY = os.getenv("SEVENTEENTRACK_API_KEY", "")
+# Ship24 Tracking API Settings
+SHIP24_API_KEY = os.getenv("SHIP24_API_KEY", "")
+SHIP24_WEBHOOK_SECRET = os.getenv("SHIP24_WEBHOOK_SECRET", "")
+try:
+    SHIP24_COURIER_CODES = json.loads(os.getenv("SHIP24_COURIER_CODES", "{}"))
+    if not isinstance(SHIP24_COURIER_CODES, dict):
+        SHIP24_COURIER_CODES = {}
+except json.JSONDecodeError:
+    SHIP24_COURIER_CODES = {}
 
 SERVER_EMAIL = EMAIL_HOST_USER

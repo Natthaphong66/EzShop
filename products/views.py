@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -13,6 +15,8 @@ from django.utils import timezone
 
 from .forms import ProductForm
 from .models import Product, ProductImage
+
+logger = logging.getLogger(__name__)
 
 class HomePageView(TemplateView):
     template_name = "home.html"
@@ -115,9 +119,8 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
         return response
 
 
-    #ดักจับ Error แล้วปริ้นท์บอกใน Terminal
     def form_invalid(self, form):
-        print("FORM ERRORS:", form.errors)
+        logger.warning("Product form errors: %s", form.errors)
         return super().form_invalid(form)
 
 

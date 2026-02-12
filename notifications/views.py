@@ -1,7 +1,11 @@
+import logging
+
 from django.views.generic import ListView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+
+logger = logging.getLogger(__name__)
 
 from .models import Notification
 
@@ -93,7 +97,7 @@ class MarkAsReadView(LoginRequiredMixin, View):
                     }
                 )
         except Exception as e:
-            print(f"Failed to send WebSocket update: {e}")
+            logger.warning("Failed to send WebSocket update: %s", e)
         
         return JsonResponse({'success': True})
 
@@ -120,6 +124,6 @@ class MarkAllAsReadView(LoginRequiredMixin, View):
                     }
                 )
         except Exception as e:
-            print(f"Failed to send WebSocket update: {e}")
+            logger.warning("Failed to send WebSocket update: %s", e)
         
         return JsonResponse({'success': True, 'marked_count': updated})

@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .webhook_views import SeventeenTrackWebhookView
+from .webhook_views import Ship24WebhookView
 
 app_name = 'orders'
 
@@ -15,7 +15,6 @@ urlpatterns = [
     path('my-orders/', views.MyOrdersView.as_view(), name='my_orders'),
     path('my-sales/', views.MySalesView.as_view(), name='my_sales'),
     
-    # 17TRACK Webhook endpoint
-    path('webhooks/17track/', SeventeenTrackWebhookView.as_view(), name='seventeentrack_webhook'),
+    # Ship24 webhook endpoint
+    path('webhooks/ship24/', Ship24WebhookView.as_view(), name='ship24_webhook'),
 ]
-

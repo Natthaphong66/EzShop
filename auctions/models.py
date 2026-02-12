@@ -1,3 +1,4 @@
+import logging
 import uuid
 from django.db import models
 from django.conf import settings
@@ -5,6 +6,8 @@ from products.models import Product
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
 
 class Auction(models.Model):
     class Status(models.TextChoices):
@@ -78,7 +81,7 @@ class Auction(models.Model):
                     from auctions.services import handle_auction_winner
                     handle_auction_winner(self, highest_bid.bidder)
                 except Exception as e:
-                    print(f"Failed to handle auction winner: {e}")
+                    logger.error("Failed to handle auction winner: %s", e)
                 
                 # Send email notification
                 try:
@@ -104,7 +107,7 @@ class Auction(models.Model):
                     msg.attach_alternative(html_content, "text/html")
                     msg.send()
                 except Exception as e:
-                    print(f"Failed to send winner email: {e}")
+                    logger.error("Failed to send winner email: %s", e)
         
         self.save()
 

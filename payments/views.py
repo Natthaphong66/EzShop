@@ -1,7 +1,7 @@
 """
 Views สำหรับ Stripe payment processing
 """
-import json
+import logging
 import stripe
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -12,7 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 from orders.models import Order
-from payments.services import create_payment_intent, handle_payment_success
+from payments.services import handle_payment_success
+
+logger = logging.getLogger(__name__)
 
 
 class CreatePaymentIntentView(LoginRequiredMixin, View):
@@ -102,8 +104,8 @@ class StripeWebhookView(View):
                 try:
                     order = Order.objects.get(id=order_id)
                     # Update order status
-                    order.stripe_payment_intent_id = session.id
-                    order.stripe_payment_status = session.payment_status
+                    order.stripe_payment_intent_id = session.get('id') or getattr(session, 'id', None)
+                    order.stripe_payment_status = session.get('payment_status') or getattr(session, 'payment_status', None)
                     order.status = Order.Status.ESCROW_HELD
                     order.save()
 
@@ -119,9 +121,9 @@ class StripeWebhookView(View):
                     except ImportError:
                         pass  # Notification service not available
                 except Order.DoesNotExist:
-                    print(f"Order {order_id} not found")
+                    logger.warning("Order %s not found", order_id)
                 except Exception as e:
-                    print(f"Error handling payment success: {e}")
+                    logger.error("Error handling payment success: %s", e)
         
         elif event['type'] == 'payment_intent.succeeded':
             # Also handle payment_intent.succeeded for compatibility
@@ -129,6 +131,6 @@ class StripeWebhookView(View):
             try:
                 handle_payment_success(payment_intent['id'])
             except Exception as e:
-                print(f"Error handling payment success: {e}")
+                logger.error("Error handling payment success: %s", e)
         
         return HttpResponse(status=200)

@@ -1,3 +1,7 @@
+import logging
+import uuid
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -8,11 +12,11 @@ from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-import uuid
-import json
 
 from .models import LiveStream
 from .agora_utils import generate_agora_token
+
+logger = logging.getLogger(__name__)
 
 
 class LiveStreamListView(ListView):
@@ -49,7 +53,7 @@ class LiveStreamDetailView(DetailView):
             context = super().get_context_data(**kwargs)
             context['agora_app_id'] = None
             context['agora_app_certificate'] = None
-            print(f"Error in get_context_data: {e}")
+            logger.error("Error in LiveStreamDetailView.get_context_data: %s", e)
             return context
 
 

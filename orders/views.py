@@ -193,7 +193,7 @@ class ShipOrderView(LoginRequiredMixin, View):
         order.status = Order.Status.SHIPPED
         order.save()
         
-        # Register tracking with 17TRACK (async, ไม่ต้องรอ)
+        # Register tracking with Ship24 (async, ไม่ต้องรอ)
         try:
             from .services import TrackingService
             service = TrackingService()
@@ -256,7 +256,7 @@ class TrackingView(LoginRequiredMixin, View):
 
 
 class TrackingAPIView(LoginRequiredMixin, View):
-    """API endpoint สำหรับดึงข้อมูล tracking จาก 17TRACK"""
+    """API endpoint สำหรับดึงข้อมูล tracking จาก Ship24"""
     
     def get(self, request, order_id):
         from django.http import JsonResponse
@@ -285,14 +285,14 @@ class TrackingAPIView(LoginRequiredMixin, View):
                 'carrier_name': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.carrier_slug),
             })
         
-        # เรียก 17TRACK API
+        # เรียก Ship24 API
         result = service.get_tracking(order.tracking_number, order.carrier_slug)
         
         if result.get('success'):
             data = result.get('data', {})
             checkpoints = data.get('checkpoints', [])
             
-            # Format checkpoints for frontend (already in correct format from 17TRACK service)
+            # Format checkpoints for frontend (already normalized by provider service)
             formatted_checkpoints = []
             for cp in checkpoints:
                 formatted_checkpoints.append({
@@ -321,5 +321,4 @@ class TrackingAPIView(LoginRequiredMixin, View):
                 'use_deep_link': True,
                 'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug),
             })
-
 

@@ -1,4 +1,4 @@
 # Tracking Providers Package
-from .seventeentrack import SeventeenTrackService
+from .ship24 import Ship24Service
 
-__all__ = ['SeventeenTrackService']
+__all__ = ['Ship24Service']

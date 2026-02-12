@@ -1,13 +1,13 @@
 """
 Tracking Service - Unified interface for shipment tracking.
 
-This module provides a unified TrackingService that wraps the 17TRACK provider.
+This module provides a unified TrackingService that wraps the Ship24 provider.
 It maintains backward compatibility with code that previously used AfterShipService.
 
-Migration from AfterShip to 17TRACK completed: February 2026
+Migration from 17TRACK to Ship24 completed: February 2026
 """
 from typing import Optional, List, Dict, Any
-from .tracking_providers import SeventeenTrackService
+from .tracking_providers import Ship24Service
 
 
 class TrackingService:
@@ -15,11 +15,11 @@ class TrackingService:
     Unified tracking service interface.
     
     This class provides backward-compatible methods that were previously
-    available in AfterShipService, now powered by 17TRACK.
+    available in AfterShipService, now powered by Ship24.
     """
     
     def __init__(self):
-        self._provider = SeventeenTrackService()
+        self._provider = Ship24Service()
     
     def create_tracking(self, tracking_number: str, carrier_slug: str) -> Dict[str, Any]:
         """
@@ -88,7 +88,7 @@ class TrackingService:
         """
         Check if carrier supports API tracking.
         
-        With 17TRACK, most carriers are supported through auto-detection.
+        With Ship24, most carriers are supported through auto-detection.
         
         Args:
             carrier_slug: The carrier identifier
@@ -101,9 +101,9 @@ class TrackingService:
     @staticmethod
     def translate_tag(tag: str) -> str:
         """Translate status tag to Thai."""
-        return SeventeenTrackService.translate_tag(tag)
+        return Ship24Service.translate_tag(tag)
     
     @staticmethod
     def get_tag_color(tag: str) -> str:
         """Get Tailwind CSS color class for tag."""
-        return SeventeenTrackService.get_tag_color(tag)
+        return Ship24Service.get_tag_color(tag)

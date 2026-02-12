@@ -11,9 +11,6 @@ from django.utils import timezone
 from .models import User
 from .forms import CustomUserCreationForm, ProfileUpdateForm
 
-class HomePageView(TemplateView):
-    template_name = 'home.html'
-
 # --- Auth ---
 
 class SignUpView(generic.CreateView):
@@ -34,11 +31,27 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         # ตรวจสอบว่ามี products app หรือไม่
         try:
             from products.models import Product
-            context['products'] = Product.objects.filter(seller=user)[:10]
-            context['products_count'] = Product.objects.filter(seller=user).count()
+            from auctions.models import Auction
+            all_products = Product.objects.filter(seller=user)
+            
+            # แยกสินค้า marketplace (ไม่มี auction) กับ auction (มี auction)
+            auction_product_ids = Auction.objects.filter(seller=user).values_list('product_id', flat=True)
+            marketplace_products = all_products.exclude(id__in=auction_product_ids)
+            auction_products = all_products.filter(id__in=auction_product_ids).select_related('auction')
+            
+            context['products'] = all_products[:10]
+            context['products_count'] = all_products.count()
+            context['marketplace_products'] = marketplace_products
+            context['marketplace_count'] = marketplace_products.count()
+            context['auction_products'] = auction_products
+            context['auction_count'] = auction_products.count()
         except:
             context['products'] = []
             context['products_count'] = 0
+            context['marketplace_products'] = []
+            context['marketplace_count'] = 0
+            context['auction_products'] = []
+            context['auction_count'] = 0
         
         # ดึงรีวิวของผู้ใช้ (ในฐานะผู้ขาย)
         try:
