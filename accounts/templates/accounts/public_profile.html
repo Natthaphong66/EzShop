@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-2">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-6 sm:p-8 border-b border-slate-200">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-5">
+                {% if profile_user.profile_picture %}
+                <img src="{{ profile_user.profile_picture.url }}" alt="{{ profile_user.get_full_name_display }}"
+                    class="w-24 h-24 rounded-full object-cover border border-slate-200">
+                {% else %}
+                <div class="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5.121 17.804A9 9 0 1118.364 4.56M15 11a3 3 0 11-6 0 3 3 0 016 0zm-8 8a8.978 8.978 0 0110 0" />
+                    </svg>
+                </div>
+                {% endif %}
+
+                <div class="min-w-0 flex-1">
+                    <h1 class="text-2xl font-bold text-slate-900">{{ profile_user.get_full_name_display }}</h1>
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="flex items-center text-amber-400 text-lg">
+                            {% if average_rating >= 1 %}★{% else %}<span class="text-slate-300">★</span>{% endif %}
+                            {% if average_rating >= 2 %}★{% else %}<span class="text-slate-300">★</span>{% endif %}
+                            {% if average_rating >= 3 %}★{% else %}<span class="text-slate-300">★</span>{% endif %}
+                            {% if average_rating >= 4 %}★{% else %}<span class="text-slate-300">★</span>{% endif %}
+                            {% if average_rating >= 5 %}★{% else %}<span class="text-slate-300">★</span>{% endif %}
+                        </div>
+                        <span class="text-slate-600">{{ average_rating }} ({{ reviews_count }} รีวิว)</span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-2">สมาชิกมาแล้ว {{ profile_user.get_membership_duration }}</p>
+                </div>
+            </div>
+
+            {% if profile_user.bio %}
+            <p class="mt-4 text-slate-700 whitespace-pre-wrap">{{ profile_user.bio }}</p>
+            {% endif %}
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">สินค้าล่าสุดของผู้ขาย ({{ products_count }})</h2>
+
+            {% if products %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for product in products %}
+                <a href="{% url 'products:product_detail' product.id %}"
+                    class="block rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all overflow-hidden bg-white">
+                    <div class="aspect-square bg-slate-100">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-slate-400">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="p-3">
+                        <p class="font-medium text-slate-900 truncate">{{ product.name }}</p>
+                        <p class="text-red-600 font-semibold mt-1">฿{{ product.price|floatformat:0|intcomma }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-10 border border-dashed border-slate-300 rounded-xl text-slate-500">
+                ยังไม่มีสินค้าที่กำลังขาย
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from .views import (
     SignUpView,
     ProfileView,
+    PublicProfileView,
     ProfileUpdateView,
     ProfileDeleteView,
     PasswordChangeView,
@@ -20,6 +21,7 @@ urlpatterns = [
         # Auth
     path('register/', SignUpView.as_view(), name='register'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('profile/<uuid:user_id>/', PublicProfileView.as_view(), name='public_profile'),
     path('profile/edit/', ProfileUpdateView.as_view(), name='profile_update'),
     path('delete/', ProfileDeleteView.as_view(), name='profile_delete'),
     path('password_change/',PasswordChangeView.as_view(),name='password_change' ),

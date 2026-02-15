@@ -71,6 +71,44 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         
         return context
 
+
+class PublicProfileView(TemplateView):
+    """หน้าโปรไฟล์สาธารณะของผู้ขาย"""
+    template_name = 'accounts/public_profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profile_user = get_object_or_404(User, id=kwargs['user_id'])
+        context['profile_user'] = profile_user
+
+        try:
+            from products.models import Product
+            products = Product.objects.filter(
+                seller=profile_user,
+                status=Product.Status.APPROVED,
+                is_sold=False,
+            ).exclude(auction__isnull=False).order_by('-created_at')
+            context['products'] = products[:8]
+            context['products_count'] = products.count()
+        except Exception:
+            context['products'] = []
+            context['products_count'] = 0
+
+        try:
+            from reviews.models import Review
+            from django.db.models import Avg
+            reviews = Review.objects.filter(seller=profile_user).select_related('reviewer', 'product').order_by('-created_at')
+            context['reviews'] = reviews[:6]
+            context['reviews_count'] = reviews.count()
+            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+            context['average_rating'] = round(avg_rating, 1) if avg_rating else 0
+        except Exception:
+            context['reviews'] = []
+            context['reviews_count'] = 0
+            context['average_rating'] = 0
+
+        return context
+
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     model = User
     form_class = ProfileUpdateForm

@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from .webhook_views import Ship24WebhookView
 
 app_name = 'orders'
 
@@ -10,11 +9,8 @@ urlpatterns = [
     path('<uuid:order_id>/cancel/', views.CancelOrderView.as_view(), name='cancel_order'),
     path('<uuid:order_id>/ship/', views.ShipOrderView.as_view(), name='ship_order'),
     path('<uuid:order_id>/confirm-received/', views.ConfirmReceivedView.as_view(), name='confirm_received'),
+    path('<uuid:order_id>/report-issue/', views.ReportIssueView.as_view(), name='report_issue'),
     path('<uuid:order_id>/tracking/', views.TrackingView.as_view(), name='tracking'),
-    path('<uuid:order_id>/tracking/api/', views.TrackingAPIView.as_view(), name='tracking_api'),
     path('my-orders/', views.MyOrdersView.as_view(), name='my_orders'),
     path('my-sales/', views.MySalesView.as_view(), name='my_sales'),
-    
-    # Ship24 webhook endpoint
-    path('webhooks/ship24/', Ship24WebhookView.as_view(), name='ship24_webhook'),
 ]

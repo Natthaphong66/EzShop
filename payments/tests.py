@@ -473,8 +473,7 @@ class FullPaymentE2ETest(TestCase):
         self.assertTrue(self.product.is_sold)
 
     # -- ขั้นตอนที่ 4: จัดส่งสินค้า --
-    @patch("orders.services.TrackingService")
-    def _step4_ship_order(self, order, mock_tracking_cls):
+    def _step4_ship_order(self, order):
         # เข้าสู่ระบบเป็นผู้ขาย
         self.client.login(phone="0800000010", password="testpass123")
         url = reverse("orders:ship_order", args=[order.id])

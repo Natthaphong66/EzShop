@@ -80,6 +80,72 @@ class Order(models.Model):
         return f"Order {self.id} - {product_name}"
 
 
+class DisputeCase(models.Model):
+    """เคสข้อพิพาทสำหรับออเดอร์ที่มีปัญหา"""
+
+    class Reason(models.TextChoices):
+        WRONG_ITEM = 'wrong_item', 'สินค้าไม่ตรงตามที่สั่ง'
+        DAMAGED = 'damaged', 'สินค้าชำรุด/เสียหาย'
+        NOT_RECEIVED = 'not_received', 'ไม่ได้รับสินค้า'
+        INCOMPLETE = 'incomplete', 'สินค้าไม่ครบ'
+        OTHER = 'other', 'อื่นๆ'
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'เปิดเคส'
+        UNDER_REVIEW = 'under_review', 'กำลังตรวจสอบ'
+        RESOLVED_REFUND = 'resolved_refund', 'คืนเงินแล้ว'
+        RESOLVED_PARTIAL = 'resolved_partial', 'คืนเงินบางส่วน'
+        RESOLVED_REJECTED = 'resolved_rejected', 'ปฏิเสธการคืนเงิน'
+
+    BANK_CHOICES = [
+        ('kbank', 'ธนาคารกสิกรไทย'),
+        ('scb', 'ธนาคารไทยพาณิชย์'),
+        ('bbl', 'ธนาคารกรุงเทพ'),
+        ('ktb', 'ธนาคารกรุงไทย'),
+        ('tmb', 'ธนาคารทหารไทยธนชาต (TTB)'),
+        ('gsb', 'ธนาคารออมสิน'),
+        ('bay', 'ธนาคารกรุงศรีอยุธยา'),
+        ('promptpay', 'พร้อมเพย์'),
+        ('other', 'อื่นๆ'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='dispute')
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='disputes_filed')
+
+    # รายละเอียดปัญหา
+    reason = models.CharField(max_length=30, choices=Reason.choices, verbose_name='สาเหตุ')
+    description = models.TextField(verbose_name='รายละเอียดปัญหา')
+    evidence_1 = models.ImageField(upload_to='disputes/', blank=True, null=True, verbose_name='หลักฐาน 1')
+    evidence_2 = models.ImageField(upload_to='disputes/', blank=True, null=True, verbose_name='หลักฐาน 2')
+    evidence_3 = models.ImageField(upload_to='disputes/', blank=True, null=True, verbose_name='หลักฐาน 3')
+
+    # ข้อมูลบัญชีรับเงินคืน
+    bank_name = models.CharField(max_length=30, choices=BANK_CHOICES, verbose_name='ธนาคาร')
+    bank_account_number = models.CharField(max_length=30, verbose_name='เลขบัญชี')
+    bank_account_name = models.CharField(max_length=100, verbose_name='ชื่อบัญชี')
+
+    # สถานะเคส
+    status = models.CharField(max_length=30, choices=Status.choices, default=Status.OPEN, verbose_name='สถานะเคส')
+    admin_note = models.TextField(blank=True, verbose_name='หมายเหตุแอดมิน')
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='จำนวนเงินคืน')
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='disputes_resolved', verbose_name='ผู้ตัดสิน'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='วันที่ตัดสิน')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'เคสข้อพิพาท'
+        verbose_name_plural = 'เคสข้อพิพาท'
+
+    def __str__(self):
+        return f"Dispute #{str(self.id)[:8]} - {self.get_reason_display()}"
+
+
 class TrackingEvent(models.Model):
     """
     Model to store tracking events received from 17TRACK webhooks.

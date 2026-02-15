@@ -2,10 +2,9 @@ from django.views.generic import View, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from django.urls import reverse
 from django.db import transaction
 
-from .models import Order
+from .models import Order, DisputeCase
 from products.models import Product
 
 
@@ -193,14 +192,6 @@ class ShipOrderView(LoginRequiredMixin, View):
         order.status = Order.Status.SHIPPED
         order.save()
         
-        # Register tracking with Ship24 (async, ไม่ต้องรอ)
-        try:
-            from .services import TrackingService
-            service = TrackingService()
-            service.create_tracking(tracking_number, carrier_slug)
-        except Exception:
-            pass  # ไม่ต้อง error ถ้า tracking registration ล้มเหลว
-        
         messages.success(request, 'ยืนยันการจัดส่งเรียบร้อยแล้ว')
         return redirect('orders:order_detail', order_id=order_id)
 
@@ -226,6 +217,89 @@ class ConfirmReceivedView(LoginRequiredMixin, View):
         return redirect('reviews:create_review', order_id=order_id)
 
 
+class ReportIssueView(LoginRequiredMixin, View):
+    """หน้าแจ้งปัญหาคำสั่งซื้อพร้อมฟอร์มรายละเอียด"""
+
+    def get(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id, buyer=request.user)
+
+        if order.status != Order.Status.SHIPPED:
+            messages.error(request, 'แจ้งปัญหาได้เฉพาะคำสั่งซื้อที่อยู่ระหว่างจัดส่ง')
+            return redirect('orders:order_detail', order_id=order_id)
+
+        # เช็คว่ามี dispute อยู่แล้วหรือไม่
+        if hasattr(order, 'dispute'):
+            messages.info(request, 'คุณได้แจ้งปัญหาสำหรับคำสั่งซื้อนี้แล้ว')
+            return redirect('orders:order_detail', order_id=order_id)
+
+        return render(request, 'orders/report_issue.html', {'order': order})
+
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id, buyer=request.user)
+
+        if order.status != Order.Status.SHIPPED:
+            messages.error(request, 'แจ้งปัญหาได้เฉพาะคำสั่งซื้อที่อยู่ระหว่างจัดส่ง')
+            return redirect('orders:order_detail', order_id=order_id)
+
+        if hasattr(order, 'dispute'):
+            messages.info(request, 'คุณได้แจ้งปัญหาสำหรับคำสั่งซื้อนี้แล้ว')
+            return redirect('orders:order_detail', order_id=order_id)
+
+        reason = request.POST.get('reason', '').strip()
+        description = request.POST.get('description', '').strip()
+        bank_name = request.POST.get('bank_name', '').strip()
+        bank_account_number = request.POST.get('bank_account_number', '').strip()
+        bank_account_name = request.POST.get('bank_account_name', '').strip()
+
+        # Validate required fields
+        if not all([reason, description, bank_name, bank_account_number, bank_account_name]):
+            messages.error(request, 'กรุณากรอกข้อมูลให้ครบทุกช่อง')
+            return render(request, 'orders/report_issue.html', {'order': order})
+
+        valid_reasons = [r[0] for r in DisputeCase.Reason.choices]
+        if reason not in valid_reasons:
+            messages.error(request, 'สาเหตุที่เลือกไม่ถูกต้อง')
+            return render(request, 'orders/report_issue.html', {'order': order})
+
+        with transaction.atomic():
+            dispute = DisputeCase(
+                order=order,
+                buyer=request.user,
+                reason=reason,
+                description=description,
+                bank_name=bank_name,
+                bank_account_number=bank_account_number,
+                bank_account_name=bank_account_name,
+            )
+
+            # Handle evidence images
+            if request.FILES.get('evidence_1'):
+                dispute.evidence_1 = request.FILES['evidence_1']
+            if request.FILES.get('evidence_2'):
+                dispute.evidence_2 = request.FILES['evidence_2']
+            if request.FILES.get('evidence_3'):
+                dispute.evidence_3 = request.FILES['evidence_3']
+
+            dispute.save()
+
+            order.status = Order.Status.DISPUTED
+            order.save(update_fields=['status', 'updated_at'])
+
+        try:
+            from notifications.services import notify_system
+            notify_system(
+                user=order.seller,
+                title='มีการแจ้งปัญหาคำสั่งซื้อ',
+                message=f'ผู้ซื้อได้แจ้งปัญหาสำหรับคำสั่งซื้อ "{order.product.name}"\nสาเหตุ: {dispute.get_reason_display()}\nรายละเอียด: {description}',
+                link=f'/orders/{order.id}/'
+            )
+        except Exception:
+            pass
+
+        messages.success(request, 'แจ้งปัญหาเรียบร้อยแล้ว ทีมงานจะตรวจสอบให้เร็วที่สุด')
+        return redirect('orders:order_detail', order_id=order_id)
+
+
 class TrackingView(LoginRequiredMixin, View):
     """หน้าติดตามพัสดุ"""
     
@@ -248,77 +322,7 @@ class TrackingView(LoginRequiredMixin, View):
         context = {
             'order': order,
             'carrier_display': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.shipping_carrier),
-            'is_api_supported': service.is_api_supported(order.carrier_slug) if order.carrier_slug else False,
             'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug) if order.carrier_slug else '',
         }
         
         return render(request, 'orders/tracking.html', context)
-
-
-class TrackingAPIView(LoginRequiredMixin, View):
-    """API endpoint สำหรับดึงข้อมูล tracking จาก Ship24"""
-    
-    def get(self, request, order_id):
-        from django.http import JsonResponse
-        from django.db.models import Q
-        
-        order = get_object_or_404(
-            Order.objects.filter(Q(buyer=request.user) | Q(seller=request.user)),
-            id=order_id
-        )
-        
-        if not order.tracking_number or not order.carrier_slug:
-            return JsonResponse({
-                'success': False,
-                'error': 'ไม่มีข้อมูลการจัดส่ง'
-            })
-        
-        from .services import TrackingService
-        service = TrackingService()
-        
-        # ตรวจสอบว่า carrier รองรับ API หรือไม่
-        if not service.is_api_supported(order.carrier_slug):
-            return JsonResponse({
-                'success': False,
-                'use_deep_link': True,
-                'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug),
-                'carrier_name': dict(Order.CARRIER_CHOICES).get(order.carrier_slug, order.carrier_slug),
-            })
-        
-        # เรียก Ship24 API
-        result = service.get_tracking(order.tracking_number, order.carrier_slug)
-        
-        if result.get('success'):
-            data = result.get('data', {})
-            checkpoints = data.get('checkpoints', [])
-            
-            # Format checkpoints for frontend (already normalized by provider service)
-            formatted_checkpoints = []
-            for cp in checkpoints:
-                formatted_checkpoints.append({
-                    'message': cp.get('message', ''),
-                    'location': cp.get('location', ''),
-                    'datetime': cp.get('datetime', ''),
-                    'tag': cp.get('tag', ''),
-                    'subtag': cp.get('subtag', ''),
-                })
-            
-            return JsonResponse({
-                'success': True,
-                'data': {
-                    'tag': data.get('tag', 'Pending'),
-                    'tag_thai': data.get('tag_thai', service.translate_tag(data.get('tag', 'Pending'))),
-                    'tag_color': data.get('tag_color', service.get_tag_color(data.get('tag', 'Pending'))),
-                    'subtag_message': data.get('subtag_message', ''),
-                    'checkpoints': formatted_checkpoints,
-                    'expected_delivery': data.get('expected_delivery'),
-                }
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', 'ไม่สามารถดึงข้อมูลได้'),
-                'use_deep_link': True,
-                'deep_link_url': service.get_deep_link_url(order.tracking_number, order.carrier_slug),
-            })
-

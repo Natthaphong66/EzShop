@@ -85,9 +85,42 @@
           <span class="text-slate-600">สภาพสินค้า:</span>
           <span class="font-semibold text-slate-900">{{ product.get_condition_display }}</span>
         </div>
-        <div class="flex justify-between">
-          <span class="text-slate-600">ผู้ขาย:</span>
-          <span class="font-semibold text-slate-900">{{ product.seller.first_name }} {{product.seller.last_name}}</span>
+      </div>
+
+      <div class="mt-2 mb-6 rounded-xl border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          {% if product.seller.profile_picture %}
+          <img src="{{ product.seller.profile_picture.url }}" alt="{{ product.seller.get_full_name_display }}"
+            class="w-12 h-12 shrink-0 rounded-full object-cover border border-slate-200">
+          {% else %}
+          <div class="w-12 h-12 shrink-0 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5.121 17.804A9 9 0 1118.364 4.56M15 11a3 3 0 11-6 0 3 3 0 016 0zm-8 8a8.978 8.978 0 0110 0" />
+            </svg>
+          </div>
+          {% endif %}
+
+          <div class="min-w-0 flex-1">
+            <p class="text-base font-bold text-slate-900 truncate">{{ product.seller.get_full_name_display }}</p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <div class="flex items-center text-sm">
+                {% for i in "12345" %}
+                  {% if seller_average_rating >= forloop.counter %}
+                    <span class="text-amber-400">★</span>
+                  {% else %}
+                    <span class="text-slate-300">★</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <span class="text-xs text-slate-500">({{ seller_reviews_count }} รีวิว)</span>
+            </div>
+          </div>
+
+          <a href="{% url 'accounts:public_profile' user_id=product.seller.id %}"
+            class="shrink-0 px-3 py-1.5 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap">
+            ดูโปรไฟล์ผู้ขาย
+          </a>
         </div>
       </div>
 

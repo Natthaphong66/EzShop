@@ -10,7 +10,7 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
-from django.db.models import Q
+from django.db.models import Q, Avg
 from django.utils import timezone
 
 from .forms import ProductForm
@@ -88,6 +88,22 @@ class ProductDetailView(DetailView):
             return qs.filter(Q(status=Product.Status.APPROVED, is_sold=False) | Q(seller=user))
         return qs.filter(status=Product.Status.APPROVED, is_sold=False)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        product = self.object
+
+        try:
+            from reviews.models import Review
+            seller_reviews = Review.objects.filter(seller=product.seller)
+            avg_rating = seller_reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+            context['seller_average_rating'] = round(avg_rating, 1)
+            context['seller_reviews_count'] = seller_reviews.count()
+        except Exception:
+            context['seller_average_rating'] = 0
+            context['seller_reviews_count'] = 0
+
+        return context
+
 
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
@@ -97,10 +113,6 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.seller = self.request.user
-        if self.request.user.is_staff or self.request.user.is_superuser:
-            form.instance.status = Product.Status.APPROVED
-            form.instance.approved_at = timezone.now()
-            form.instance.approved_by = self.request.user
         response = super().form_valid(form)
         
         # Handle multiple images
