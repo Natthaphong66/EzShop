@@ -1,0 +1,162 @@
+{% extends 'dashboard/base_admin_dashboard.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">จัดการการประมูล</h1>
+        <p class="text-slate-500 text-sm mt-1">รายการประมูลสินค้าทั้งหมด</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-4">
+        <div class="w-full sm:w-48">
+            <select name="status"
+                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-[#570010] focus:border-[#570010]">
+                <option value="">ทุกสถานะ</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit"
+            class="px-6 py-2 bg-[#570010] text-white font-medium rounded-lg hover:bg-[#3d000b] transition-colors">
+            กรอง
+        </button>
+        {% if current_status %}
+        <a href="{% url 'dashboard:admin_auction_list' %}"
+            class="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 text-center">
+            ล้างค่า
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Auctions Table -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4">สินค้า</th>
+                    <th class="px-6 py-4">ราคาเริ่มต้น</th>
+                    <th class="px-6 py-4">ราคาปัจจุบัน</th>
+                    <th class="px-6 py-4">ผู้ขาย</th>
+                    <th class="px-6 py-4">สถานะ</th>
+                    <th class="px-6 py-4">จบเวลา</th>
+                    <th class="px-6 py-4 text-right">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for auction in auctions %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                {% if auction.product.image %}
+                                <img src="{{ auction.product.image.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-slate-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900 truncate max-w-[200px]"
+                                    title="{{ auction.product.name }}">{{ auction.product.name }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-600">
+                        ฿{{ auction.starting_price|floatformat:0 }}
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-[#570010]">
+                        {% if auction.current_price %}
+                        ฿{{ auction.current_price|floatformat:0 }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#570010] text-white flex items-center justify-center text-xs font-bold">
+                                {{ auction.seller.get_full_name_display|first|upper }}
+                            </div>
+                            <span class="text-slate-600 truncate max-w-[120px]">{{ auction.seller.get_full_name_display}}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if auction.status == 'live' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Live
+                        </span>
+                        {% elif auction.status == 'ended' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                            จบแล้ว
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            ยกเลิก
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs">
+                        {{ auction.end_at|date:"d/m/Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'auctions:auction_detail' auction.id %}" target="_blank"
+                                class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="ดูการประมูล">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+
+                            <form method="post" onsubmit="return confirm('ยืนยันที่จะลบการประมูลนี้?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="delete_auction" value="true">
+                                <input type="hidden" name="auction_id" value="{{ auction.id }}">
+                                <button type="submit"
+                                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="ลบการประมูล">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                        <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        ไม่พบรายการประมูล
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

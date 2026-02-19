@@ -1,0 +1,123 @@
+{% extends 'dashboard/base_admin_dashboard.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">จัดการไลฟ์สตรีม</h1>
+        <p class="text-slate-500 text-sm mt-1">รายการถ่ายทอดสดทั้งหมด</p>
+    </div>
+</div>
+
+<!-- Livestreams Table -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4">หัวข้อ</th>
+                    <th class="px-6 py-4">ผู้จัด (Host)</th>
+                    <th class="px-6 py-4">สถานะ</th>
+                    <th class="px-6 py-4">เริ่มเมื่อ</th>
+                    <th class="px-6 py-4 text-right">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for stream in streams %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-400">
+                                {% if stream.cover_image %}
+                                <img src="{{ stream.cover_image.url }}" class="w-full h-full object-cover rounded-lg">
+                                {% else %}
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900 truncate max-w-[200px]" title="{{ stream.title }}">
+                                    {{ stream.title }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#570010] text-white flex items-center justify-center text-xs font-bold">
+                                {{ stream.host.get_full_name_display|first|upper }}
+                            </div>
+                            <span class="text-slate-600 truncate max-w-[120px]">{{ stream.host.get_full_name_display}}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if stream.status == 'live' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">
+                            กำลังถ่ายทอดสด
+                        </span>
+                        {% elif stream.status == 'ended' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                            จบแล้ว
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            กำลังเตรียม
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs">
+                        {{ stream.created_at|date:"d/m/Y H:i" }}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'live:stream_detail' stream.id %}" target="_blank"
+                                class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="ดูไลฟ์">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+
+                            <form method="post" onsubmit="return confirm('ยืนยันที่จะลบไลฟ์สตรีมนี้?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="delete_stream" value="true">
+                                <input type="hidden" name="stream_id" value="{{ stream.id }}">
+                                <button type="submit"
+                                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="ลบไลฟ์">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                        <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        ไม่พบรายการไลฟ์สตรีม
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -37,7 +37,7 @@
                 {% elif auction.status == 'ended' %}ENDED
                 {% else %}{{ auction.get_status_display|upper }}{% endif %}
             </div>
-            
+
             <!-- Leading Badge -->
             {% if item.is_leading and auction.status == 'live' %}
             <div class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-bold shadow-sm">
@@ -53,9 +53,10 @@
 
             <div class="mt-auto">
                 <p class="text-xs text-slate-500 mb-1">ราคาปัจจุบัน</p>
-                <p class="text-red-600 font-bold text-lg">฿ {{auction.current_price|default:auction.starting_price|intcomma }}</p>
-                
-                <p class="text-xs text-blue-600 font-medium mt-1">บิดของคุณ: ฿{{ item.my_highest_bid|intcomma }}</p>
+                <p class="text-red-600 font-bold text-lg">฿
+                    {{auction.current_price|default:auction.starting_price|intcomma }}</p>
+
+                <p class="text-xs text-red-600 font-medium mt-1">บิดของคุณ: ฿{{ item.my_highest_bid|intcomma }}</p>
                 <p class="text-xs text-slate-400 mt-0.5">บิด {{ item.my_bid_count }} ครั้ง</p>
 
                 <div class="flex items-center gap-1 mt-2 text-xs text-slate-500">
@@ -77,19 +78,19 @@
 {% if is_paginated %}
 <nav class="mt-8 flex justify-center gap-2">
     {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" 
-       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+    <a href="?page={{ page_obj.previous_page_number }}"
+        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
         ก่อนหน้า
     </a>
     {% endif %}
-    
+
     <span class="px-4 py-2 text-sm font-medium text-slate-700">
         หน้า {{ page_obj.number }} จาก {{ page_obj.paginator.num_pages }}
     </span>
-    
+
     {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" 
-       class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+    <a href="?page={{ page_obj.next_page_number }}"
+        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
         ถัดไป
     </a>
     {% endif %}
@@ -109,4 +110,3 @@
 </div>
 {% endif %}
 {% endblock %}
-

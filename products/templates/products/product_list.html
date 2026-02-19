@@ -5,9 +5,7 @@
 <!-- Breadcrumb -->
 {% if selected_category %}
 <nav class="text-sm text-slate-500 mb-4 py-2">
-  <a href="{% url 'home' %}" class="hover:text-blue-600">หน้าหลัก</a>
-  <span class="mx-2">›</span>
-  <a href="{% url 'products:product_list' %}" class="hover:text-blue-600">สินค้าทั้งหมด</a>
+  <a href="{% url 'home' %}" class="hover:text-red-600">หน้าหลัก</a>
   <span class="mx-2">›</span>
   <span class="text-slate-700">{% for key, label in categories %}{% if key == selected_category %}{{ label }}{% endif%}
     {% endfor %}
@@ -56,7 +54,7 @@
       {% endif %}
     </div>
     <div class="p-3 flex-1 flex flex-col">
-      <h3 class="font-medium text-slate-900 text-sm line-clamp-2 mb-1.5 group-hover:text-blue-600 transition-colors">
+      <h3 class="font-medium text-slate-900 text-sm line-clamp-2 mb-1.5 group-hover:text-red-600 transition-colors">
         {{ product.name }}
       </h3>
       <p class="text-xs text-slate-500 truncate mb-1 mt-auto">หมวดหมู่: {{ product.category|default:"-" }}</p>

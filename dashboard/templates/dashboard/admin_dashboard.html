@@ -1,355 +1,265 @@
-{% extends 'base.html' %}
+{% extends 'dashboard/base_admin_dashboard.html' %}
 {% load static %}
 
-{% block content %}
-<div class="py-8">
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-        <p class="text-slate-600 mt-1">ภาพรวมของระบบ EzShop</p>
-    </div>
+{% block admin_content %}
+<!-- Page header -->
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
+    <p class="text-slate-500 text-sm mt-1">ภาพรวมของระบบ EzShop ทั้งหมด</p>
+</div>
 
-    <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Users Card -->
-        <div
-            class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg shadow-blue-500/30">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-100 text-sm font-medium">ผู้ใช้ทั้งหมด</p>
-                    <p class="text-3xl font-bold mt-1">{{ total_users }}</p>
-                    <p class="text-blue-200 text-xs mt-2">
-                        วันนี้ +{{ users_today }} | สัปดาห์ +{{ users_week }}
-                    </p>
-                </div>
-                <div class="bg-white/20 p-3 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                        </path>
-                    </svg>
-                </div>
-            </div>
+<!-- ── Stats Cards (4 columns) ── -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+
+    <!-- Users -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style="background-color:#fdf2f4;">
+            <svg class="w-6 h-6" style="color:#570010;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
         </div>
-
-        <!-- Products Card -->
-        <div
-            class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-500/30">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-emerald-100 text-sm font-medium">สินค้าทั้งหมด</p>
-                    <p class="text-3xl font-bold mt-1">{{ total_products }}</p>
-                    <p class="text-emerald-200 text-xs mt-2">
-                        รออนุมัติ {{ products_pending }} | อนุมัติ {{ products_approved }}
-                    </p>
-                </div>
-                <div class="bg-white/20 p-3 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Orders Card -->
-        <div
-            class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg shadow-orange-500/30">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-orange-100 text-sm font-medium">ออเดอร์ทั้งหมด</p>
-                    <p class="text-3xl font-bold mt-1">{{ total_orders }}</p>
-                    <p class="text-orange-200 text-xs mt-2">
-                        กำลังดำเนินการ {{ orders_escrow }} | สำเร็จ {{ orders_completed }}
-                    </p>
-                </div>
-                <div class="bg-white/20 p-3 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
-                        </path>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Revenue Card -->
-        <div
-            class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg shadow-purple-500/30">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-purple-100 text-sm font-medium">รายได้รวม</p>
-                    <p class="text-3xl font-bold mt-1">฿{{ total_revenue|floatformat:0 }}</p>
-                    <p class="text-purple-200 text-xs mt-2">
-                        เดือนนี้ ฿{{ monthly_revenue|floatformat:0 }}
-                    </p>
-                </div>
-                <div class="bg-white/20 p-3 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                        </path>
-                    </svg>
-                </div>
-            </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">ผู้ใช้ทั้งหมด</p>
+            <p class="text-2xl font-bold text-slate-900">{{ total_users }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">+{{ users_today }} วันนี้ · +{{ users_week }} สัปดาห์นี้</p>
         </div>
     </div>
 
-    <!-- Secondary Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Auctions Card -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="bg-red-100 p-3 rounded-xl">
-                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-slate-500 text-sm">การประมูล</p>
-                    <p class="text-2xl font-bold text-slate-900">
-                        {{ auctions_live }} <span class="text-sm font-normal text-slate-500">กำลัง Live</span>
-                    </p>
-                    <p class="text-xs text-slate-400">จบแล้ว {{ auctions_ended }} | บิดทั้งหมด {{ total_bids }}</p>
-                </div>
-            </div>
+    <!-- Products -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
         </div>
-
-        <!-- Reviews Card -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="bg-yellow-100 p-3 rounded-xl">
-                    <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path
-                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
-                        </path>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-slate-500 text-sm">รีวิว</p>
-                    <p class="text-2xl font-bold text-slate-900">
-                        {{ total_reviews }} <span class="text-sm font-normal text-slate-500">รีวิว</span>
-                    </p>
-                    <p class="text-xs text-slate-400">คะแนนเฉลี่ย {{ avg_rating }} ดาว</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Live Streams Card -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div class="flex items-center gap-4">
-                <div class="bg-pink-100 p-3 rounded-xl">
-                    <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-slate-500 text-sm">ไลฟ์สตรีม</p>
-                    <p class="text-2xl font-bold text-slate-900">
-                        {{ streams_live }} <span class="text-sm font-normal text-slate-500">กำลังถ่ายทอด</span>
-                    </p>
-                    <p class="text-xs text-slate-400">ทั้งหมด {{ total_streams }} ครั้ง</p>
-                </div>
-            </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">สินค้าทั้งหมด</p>
+            <p class="text-2xl font-bold text-slate-900">{{ total_products }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">รออนุมัติ {{ products_pending }} · อนุมัติ {{ products_approved }}
+            </p>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8">
-        <h2 class="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-        <div class="flex flex-wrap gap-3">
-            <a href="{% url 'accounts:admin_listings' %}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                จัดการสินค้ารออนุมัติ ({{ products_pending }})
-            </a>
-            <a href="{% url 'products:product_list' %}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
-                    </path>
-                </svg>
-                ดูสินค้าทั้งหมด
-            </a>
-            <a href="{% url 'auctions:auction_list' %}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                ดูการประมูลทั้งหมด
-            </a>
-            <a href="{% url 'dashboard:dispute_list' %}"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-                จัดการข้อพิพาท ({{ disputes_open }})
-            </a>
-            <a href="/admin/"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                    </path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                Django Admin
-            </a>
+    <!-- Orders -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-orange-50">
+            <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+        </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">ออเดอร์ทั้งหมด</p>
+            <p class="text-2xl font-bold text-slate-900">{{ total_orders }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">ดำเนินการ {{ orders_escrow }} · สำเร็จ {{ orders_completed }}</p>
         </div>
     </div>
 
-    <!-- Tables Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Recent Orders -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h2 class="text-lg font-semibold text-slate-900">ออเดอร์ล่าสุด</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">ผู้ซื้อ</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">สินค้า</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">ราคา</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for order in recent_orders %}
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3 text-sm text-slate-900">{{ order.buyer.get_full_name_display }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-600 truncate max-w-[150px]">{{ order.product.name }}
-                            </td>
-                            <td class="px-4 py-3 text-sm font-medium text-slate-900">฿{{ order.amount|floatformat:0 }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                                    {% if order.status == 'completed' %}bg-green-100 text-green-800
-                                    {% elif order.status == 'shipped' %}bg-blue-100 text-blue-800
-                                    {% elif order.status == 'escrow_held' %}bg-yellow-100 text-yellow-800
-                                    {% elif order.status == 'disputed' %}bg-red-100 text-red-800
-                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                    {{ order.get_status_display }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-slate-500">ยังไม่มีออเดอร์</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <!-- Revenue -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-purple-50">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
         </div>
-
-        <!-- Pending Products -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-slate-900">สินค้ารออนุมัติ</h2>
-                {% if products_pending > 0 %}
-                <a href="{% url 'accounts:admin_listings' %}"
-                    class="text-sm text-red-600 hover:text-red-700">ดูทั้งหมด</a>
-                {% endif %}
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">ผู้ขาย</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">สินค้า</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">ราคา</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">วันที่</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        {% for product in pending_products %}
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3 text-sm text-slate-900">{{ product.seller.get_full_name_display }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-600 truncate max-w-[150px]">
-                                <a href="{% url 'products:product_detail' product.pk %}" class="hover:text-red-600">{{product.name }}</a>
-                            </td>
-                            <td class="px-4 py-3 text-sm font-medium text-slate-900">฿{{ product.price|floatformat:0 }}
-                            </td>
-                            <td class="px-4 py-3 text-sm text-slate-500">{{ product.created_at|date:"d/m/Y" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-slate-500">
-                                <svg class="w-12 h-12 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                ไม่มีสินค้ารออนุมัติ
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Reviews -->
-    <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-200">
-            <h2 class="text-lg font-semibold text-slate-900">รีวิวล่าสุด</h2>
-        </div>
-        <div class="divide-y divide-slate-100">
-            {% for review in recent_reviews %}
-            <div class="p-4 hover:bg-slate-50">
-                <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0">
-                        <div
-                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold">
-                            {{ review.reviewer.get_full_name_display|first|upper }}
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium text-slate-900">{{ review.reviewer.get_full_name_display }}</span>
-                            <span class="text-slate-400">→</span>
-                            <span class="text-slate-600">{{ review.seller.get_full_name_display }}</span>
-                        </div>
-                        <div class="flex items-center gap-1 mt-1">
-                            {% for i in "12345" %}
-                            {% if forloop.counter <= review.rating %} <svg class="w-4 h-4 text-yellow-400"
-                                fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
-                                </path>
-                                </svg>
-                                {% else %}
-                                <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
-                                    </path>
-                                </svg>
-                                {% endif %}
-                                {% endfor %}
-                                <span class="text-xs text-slate-400 ml-2">{{ review.created_at|date:"d/m/Y" }}</span>
-                        </div>
-                        {% if review.comment %}
-                        <p class="text-sm text-slate-600 mt-1">{{ review.comment|truncatechars:100 }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="p-8 text-center text-slate-500">ยังไม่มีรีวิว</div>
-            {% endfor %}
+        <div>
+            <p class="text-xs text-slate-400 font-medium">รายได้รวม</p>
+            <p class="text-2xl font-bold text-slate-900">฿{{ total_revenue|floatformat:0 }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">เดือนนี้ ฿{{ monthly_revenue|floatformat:0 }}</p>
         </div>
     </div>
 </div>
-{% endblock %}
+
+<!-- ── Secondary Stats (3 columns) ── -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+    <!-- Auctions -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background-color:#fdf2f4;">
+            <svg class="w-5 h-5" style="color:#570010;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">การประมูล</p>
+            <p class="text-xl font-bold text-slate-900">{{ auctions_live }} <span
+                    class="text-sm font-normal text-slate-400">Live</span></p>
+            <p class="text-xs text-slate-400 mt-0.5">จบแล้ว {{ auctions_ended }} · บิด {{ total_bids }} ครั้ง</p>
+        </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-yellow-50">
+            <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+        </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">รีวิว</p>
+            <p class="text-xl font-bold text-slate-900">{{ total_reviews }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">คะแนนเฉลี่ย {{ avg_rating }} ดาว</p>
+        </div>
+    </div>
+
+    <!-- Livestreams -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-pink-50">
+            <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+        </div>
+        <div>
+            <p class="text-xs text-slate-400 font-medium">ไลฟ์สตรีม</p>
+            <p class="text-xl font-bold text-slate-900">{{ streams_live }} <span
+                    class="text-sm font-normal text-slate-400">Live</span></p>
+            <p class="text-xs text-slate-400 mt-0.5">ทั้งหมด {{ total_streams }} ครั้ง</p>
+        </div>
+    </div>
+</div>
+
+<!-- ── Tables Row ── -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- Recent Orders -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">ออเดอร์ล่าสุด</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                        <th class="px-4 py-3 text-left font-medium">ผู้ซื้อ</th>
+                        <th class="px-4 py-3 text-left font-medium">สินค้า</th>
+                        <th class="px-4 py-3 text-left font-medium">ราคา</th>
+                        <th class="px-4 py-3 text-left font-medium">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for order in recent_orders %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-slate-800 font-medium">{{ order.buyer.get_full_name_display }}</td>
+                        <td class="px-4 py-3 text-slate-500 truncate max-w-[130px]">{{ order.product.name }}</td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">฿{{ order.amount|floatformat:0 }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                    {% if order.status == 'completed' %}bg-green-100 text-green-700
+                    {% elif order.status == 'shipped' %}bg-blue-100 text-blue-700
+                    {% elif order.status == 'escrow_held' %}bg-yellow-100 text-yellow-700
+                    {% elif order.status == 'disputed' %}bg-red-100 text-red-700
+                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-slate-400">ยังไม่มีออเดอร์</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Products -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">สินค้ารออนุมัติ</h2>
+            {% if products_pending > 0 %}
+            <a href="{% url 'dashboard:admin_listings' %}" class="text-xs font-medium hover:underline"
+                style="color:#570010;">ดูทั้งหมด →</a>
+            {% endif %}
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                        <th class="px-4 py-3 text-left font-medium">ผู้ขาย</th>
+                        <th class="px-4 py-3 text-left font-medium">สินค้า</th>
+                        <th class="px-4 py-3 text-left font-medium">ราคา</th>
+                        <th class="px-4 py-3 text-left font-medium">วันที่</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for product in pending_products %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-slate-800 font-medium">{{ product.seller.get_full_name_display }}</td>
+                        <td class="px-4 py-3 text-slate-500 truncate max-w-[130px]">
+                            <a href="{% url 'products:product_detail' product.pk %}" class="hover:underline"
+                                style="color:#570010;">{{ product.name }}</a>
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">฿{{ product.price|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-slate-400">{{ product.created_at|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-slate-400">
+                            <svg class="w-10 h-10 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            ไม่มีสินค้ารออนุมัติ
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Recent Reviews ── -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100">
+        <h2 class="font-semibold text-slate-800">รีวิวล่าสุด</h2>
+    </div>
+    <div class="divide-y divide-slate-50">
+        {% for review in recent_reviews %}
+        <div class="px-6 py-4 hover:bg-slate-50 transition-colors">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    style="background-color:#570010;">
+                    {{ review.reviewer.get_full_name_display|first|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-medium text-slate-800 text-sm">{{ review.reviewer.get_full_name_display}}</span>
+                        <span class="text-slate-300 text-xs">→</span>
+                        <span class="text-slate-500 text-sm">{{ review.seller.get_full_name_display }}</span>
+                        <span class="ml-auto text-xs text-slate-400">{{ review.created_at|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex items-center gap-0.5 mt-1">
+                        {% for i in "12345" %}
+                        {% if forloop.counter <= review.rating %} <svg class="w-3.5 h-3.5 text-yellow-400"
+                            fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            {% else %}
+                            <svg class="w-3.5 h-3.5 text-slate-200" fill="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            {% endif %}
+                            {% endfor %}
+                    </div>
+                    {% if review.comment %}
+                    <p class="text-sm text-slate-500 mt-1 truncate">{{ review.comment|truncatechars:120 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="px-6 py-8 text-center text-slate-400 text-sm">ยังไม่มีรีวิว</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock admin_content %}

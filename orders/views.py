@@ -120,6 +120,14 @@ class OrderDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         from django.conf import settings
         context['STRIPE_PUBLISHABLE_KEY'] = settings.STRIPE_PUBLISHABLE_KEY
+        # เพิ่ม deep_link_url สำหรับลิงก์ตรงไปเว็บขนส่ง
+        order = self.object
+        if order.tracking_number and order.carrier_slug:
+            from .services import TrackingService
+            service = TrackingService()
+            context['tracking_deep_link'] = service.get_deep_link_url(order.tracking_number, order.carrier_slug)
+        else:
+            context['tracking_deep_link'] = ''
         return context
 
 

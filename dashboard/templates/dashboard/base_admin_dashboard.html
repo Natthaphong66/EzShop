@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block navbar %}{% endblock %}
+
+{% block page_wrapper %}
+<div class="flex min-h-screen bg-slate-100">
+
+    <!-- ═══════════════════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════════════════════ -->
+    <aside class="w-64 shrink-0 bg-white shadow-sm border-r border-slate-200 flex flex-col fixed h-full z-10">
+        <!-- Logo area -->
+        <div class="px-6 py-5 border-b border-slate-100">
+            <span class="text-xl font-bold"
+                style="background: linear-gradient(135deg,#570010,#3d000b); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                EzShop
+            </span>
+            <span class="ml-2 text-xs font-semibold text-slate-400 uppercase tracking-widest">Admin</span>
+        </div>
+
+        <!-- Nav -->
+        <nav class="flex-1 py-4 overflow-y-auto">
+            <!-- MENU group -->
+            <p class="px-6 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-widest">เมนูหลัก</p>
+
+            <a href="{% url 'dashboard:admin_dashboard' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+            </a>
+
+            <a href="{% url 'dashboard:admin_listings' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mt-1 {% if request.resolver_match.url_name == 'admin_listings' %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                อนุมัติสินค้า
+            </a>
+
+            <a href="{% url 'dashboard:dispute_list' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mt-1 {% if 'dispute' in request.resolver_match.url_name %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                ข้อพิพาท
+            </a>
+
+            <a href="{% url 'dashboard:admin_product_list' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mt-1 {% if request.resolver_match.url_name == 'admin_product_list' %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                สินค้าทั้งหมด
+            </a>
+
+            <a href="{% url 'dashboard:admin_auction_list' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mt-1 {% if request.resolver_match.url_name == 'admin_auction_list' %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                การประมูล
+            </a>
+
+            <a href="{% url 'dashboard:admin_livestream_list' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mt-1 {% if request.resolver_match.url_name == 'admin_livestream_list' %}bg-[#fdf2f4] text-[#570010] font-semibold{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                ไลฟ์สตรีม
+            </a>
+
+            <!-- OTHERS group -->
+            <p class="px-6 pt-5 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-widest">อื่นๆ</p>
+
+            <a href="/admin/"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all mt-1">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Django Admin
+            </a>
+
+            <a href="{% url 'home' %}"
+                class="flex items-center gap-3 mx-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all mt-1">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                กลับหน้าหลัก
+            </a>
+        </nav>
+
+        <!-- User info bottom -->
+        <div class="px-4 py-4 border-t border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                    style="background-color:#570010;">
+                    {{ request.user.get_full_name_display|first|upper }}
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-sm font-semibold text-slate-800 truncate">{{ request.user.get_full_name_display }}
+                    </p>
+                    <p class="text-xs text-slate-400">Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT
+    ══════════════════════════════════════════════════════ -->
+    <main class="flex-1 overflow-y-auto p-8 ml-64">
+        {% block admin_content %}{% endblock %}
+    </main>
+</div>
+{% endblock page_wrapper %}

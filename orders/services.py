@@ -8,7 +8,7 @@ class TrackingService:
 
     CARRIER_TRACKING_URLS = {
         "thailand-post": "https://track.thailandpost.co.th/?trackNumber={tracking_number}",
-        "kerry-express-thailand": "https://th.kerryexpress.com/th/track/?track={tracking_number}",
+        "kerry-express-thailand": "https://th.kex-express.com/th/track-parcel={tracking_number}",
         "flash-express": "https://www.flashexpress.co.th/tracking/?se={tracking_number}",
         "ninjavan-thailand": "https://www.ninjavan.co/th-th/tracking?id={tracking_number}",
         "dhl": "https://www.dhl.com/th-en/home/tracking.html?tracking-id={tracking_number}",

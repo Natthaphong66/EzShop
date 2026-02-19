@@ -258,7 +258,7 @@
             <template x-for="bid in sortedBidHistory" :key="bid.id">
                 <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm"
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-red-700 flex items-center justify-center text-white font-bold text-sm"
                             x-show="!bid.bidder_profile_picture">
                             <span x-text="bid.bidder_name.charAt(0).toUpperCase()"></span>
                         </div>

@@ -24,7 +24,6 @@ class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboard/admin_dashboard.html'
     
     def test_func(self):
-        """ตรวจสอบว่าผู้ใช้เป็น admin (is_staff หรือ is_superuser)"""
         return self.request.user.is_staff or self.request.user.is_superuser
     
     def get_context_data(self, **kwargs):
@@ -244,7 +243,6 @@ class DisputeActionView(StaffRequiredMixin, View):
                 'status', 'admin_note', 'resolved_by', 'resolved_at', 'updated_at'
             ])
 
-            # เปลี่ยนสถานะออเดอร์กลับเป็น shipped
             dispute.order.status = Order.Status.SHIPPED
             dispute.order.save(update_fields=['status', 'updated_at'])
 
@@ -261,3 +259,188 @@ class DisputeActionView(StaffRequiredMixin, View):
             messages.success(request, 'ปฏิเสธการคืนเงินเรียบร้อย')
 
         return redirect('dashboard:dispute_detail', dispute_id=dispute_id)
+
+class AdminProductListView(StaffRequiredMixin, TemplateView):
+    """หน้าจัดการสินค้าทั้งหมดสำหรับแอดมิน"""
+    template_name = 'dashboard/admin_product_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        category = self.request.GET.get('category')
+        q = self.request.GET.get('q')
+        
+        products = Product.objects.select_related('seller').all()
+        
+        if category:
+            products = products.filter(category=category)
+        
+        if q:
+            products = products.filter(name__icontains=q)
+            
+        context['products'] = products.order_by('-created_at')
+        context['categories'] = Product.Category.choices
+        context['current_category'] = category
+        context['search_query'] = q
+        
+        return context
+
+    def post(self, request):
+        if 'delete_product' in request.POST:
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(Product, id=product_id)
+            product.delete()
+            messages.success(request, f'ลบสินค้า "{product.name}" เรียบร้อยแล้ว')
+        return redirect('dashboard:admin_product_list')
+
+
+class AdminAuctionListView(StaffRequiredMixin, TemplateView):
+    """หน้าจัดการการประมูลสำหรับแอดมิน"""
+    template_name = 'dashboard/admin_auction_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        status = self.request.GET.get('status')
+        auctions = Auction.objects.select_related('product', 'seller').all()
+        
+        if status:
+            auctions = auctions.filter(status=status)
+            
+        context['auctions'] = auctions.order_by('-created_at')
+        context['statuses'] = Auction.Status.choices
+        context['current_status'] = status
+        
+        return context
+
+    def post(self, request):
+        if 'delete_auction' in request.POST:
+            auction_id = request.POST.get('auction_id')
+            auction = get_object_or_404(Auction, id=auction_id)
+            auction.delete()
+            messages.success(request, f'ลบการประมูล "{auction.product.name}" เรียบร้อยแล้ว')
+            
+        return redirect('dashboard:admin_auction_list')
+
+
+class AdminLiveStreamListView(StaffRequiredMixin, TemplateView):
+    """หน้าจัดการไลฟ์สตรีมสำหรับแอดมิน"""
+    template_name = 'dashboard/admin_livestream_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        streams = LiveStream.objects.select_related('host').all()
+        context['streams'] = streams.order_by('-created_at')
+        return context
+
+    def post(self, request):
+        if 'delete_stream' in request.POST:
+            stream_id = request.POST.get('stream_id')
+            stream = get_object_or_404(LiveStream, id=stream_id)
+            stream.delete()
+            messages.success(request, f'ลบไลฟ์สตรีม "{stream.title}" เรียบร้อยแล้ว')
+        return redirect('dashboard:admin_livestream_list')
+
+
+class AdminListingsView(StaffRequiredMixin, TemplateView):
+    template_name = 'dashboard/admin_listings.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        status_filter = self.request.GET.get('status', 'pending')
+        type_filter = self.request.GET.get('type', 'marketplace')
+
+        if status_filter == 'all':
+            products = Product.objects.all()
+        else:
+            products = Product.objects.filter(status=status_filter)
+
+        # Filter by type: marketplace (no auction) or auction (has auction)
+        if type_filter == 'auction':
+            products = products.filter(auction__isnull=False)
+        else:
+            products = products.filter(auction__isnull=True)
+
+        context['products'] = products.select_related('seller').order_by('-created_at')
+        context['status_filter'] = status_filter
+        context['type_filter'] = type_filter
+
+        # Counts based on type filter
+        if type_filter == 'auction':
+            base_qs = Product.objects.filter(auction__isnull=False)
+        else:
+            base_qs = Product.objects.filter(auction__isnull=True)
+
+        context['count_pending'] = base_qs.filter(status=Product.Status.PENDING).count()
+        context['count_approved'] = base_qs.filter(status=Product.Status.APPROVED).count()
+        context['count_rejected'] = base_qs.filter(status=Product.Status.REJECTED).count()
+        context['count_all'] = base_qs.count()
+        
+        context['listings'] = context['products']  # Alias for compatibility
+
+        return context
+
+
+class AdminListingActionView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        from notifications.services import notify_system
+
+        product = get_object_or_404(Product, pk=pk)
+        action = request.POST.get('action')
+        rejection_reason = request.POST.get('rejection_reason', '').strip()
+
+        if action == 'approve':
+            product.status = Product.Status.APPROVED
+            product.approved_at = timezone.now()
+            product.approved_by = request.user
+            product.rejected_at = None
+            product.rejected_by = None
+            product.rejection_reason = ''
+            product.save(update_fields=[
+                'status', 'approved_at', 'approved_by',
+                'rejected_at', 'rejected_by', 'rejection_reason'
+            ])
+
+            # Start auction timer if product has an auction that hasn't started yet
+            if hasattr(product, 'auction') and product.auction.start_at is None:
+                auction = product.auction
+                auction.start_at = timezone.now()
+                auction.end_at = auction.start_at + timedelta(minutes=auction.duration_minutes)
+                auction.save(update_fields=['start_at', 'end_at'])
+
+            notify_system(
+                user=product.seller,
+                title='ประกาศได้รับการอนุมัติ',
+                message=f'ประกาศ "{product.name}" ได้รับการอนุมัติแล้ว',
+                link=product.get_absolute_url()
+            )
+            messages.success(request, 'อนุมัติประกาศเรียบร้อยแล้ว')
+        elif action == 'reject':
+            product.status = Product.Status.REJECTED
+            product.rejected_at = timezone.now()
+            product.rejected_by = request.user
+            product.rejection_reason = rejection_reason
+            product.approved_at = None
+            product.approved_by = None
+            product.save(update_fields=[
+                'status', 'rejected_at', 'rejected_by',
+                'rejection_reason', 'approved_at', 'approved_by'
+            ])
+            notify_system(
+                user=product.seller,
+                title='ประกาศถูกปฏิเสธ',
+                message=f'ประกาศ "{product.name}" ถูกปฏิเสธ{f" (เหตุผล: {rejection_reason})" if rejection_reason else ""}',
+                link=product.get_absolute_url()
+            )
+            messages.success(request, 'ปฏิเสธประกาศเรียบร้อยแล้ว')
+        elif action == 'delete':
+            try:
+                product.delete()
+                messages.success(request, 'ลบประกาศเรียบร้อยแล้ว')
+            except Exception:
+                messages.error(request, 'ไม่สามารถลบประกาศนี้ได้ เนื่องจากมีคำสั่งซื้อที่เกี่ยวข้อง กรุณาลบคำสั่งซื้อก่อน')
+        else:
+            messages.error(request, 'คำสั่งไม่ถูกต้อง')
+
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard:admin_listings'))

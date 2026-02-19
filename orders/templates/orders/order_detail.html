@@ -133,13 +133,13 @@
 
             <!-- Shipping Information (visible when shipped or completed) -->
             {% if order.tracking_number and order.shipping_carrier %}
-            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+            <div style="background-color: #fdf2f4; border: 1px solid #c9a0a8;" class="rounded-xl p-4 mb-6">
                 <div class="flex items-center gap-2 mb-3">
-                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" style="color: #570010;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                     </svg>
-                    <h3 class="font-bold text-purple-800">ข้อมูลการจัดส่ง</h3>
+                    <h3 class="font-bold" style="color: #570010;">ข้อมูลการจัดส่ง</h3>
                 </div>
                 <div class="bg-white rounded-lg p-3 space-y-2">
                     <div class="flex justify-between items-center">
@@ -148,8 +148,21 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-slate-600">เลขพัสดุ:</span>
-                        <span
-                            class="font-mono font-semibold text-purple-600 bg-purple-100 px-2 py-1 rounded">{{order.tracking_number}}</span>
+                        <div class="flex items-center gap-2">
+                            <span id="tracking-number" class="font-mono font-semibold px-2 py-1 rounded"
+                                style="color: #570010; background-color: #DAD9D2;">{{order.tracking_number }}</span>
+                            <!-- ปุ่มคัดลอกเลขพัสดุ -->
+                            <button onclick="copyTracking()"
+                                class="flex items-center gap-1 px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                                title="คัดลอกเลขพัสดุ">
+                                <svg id="copy-icon" class="w-6 h-3" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <span id="copy-text">คัดลอก</span>
+                            </button>
+                        </div>
                     </div>
                     {% if order.shipped_at %}
                     <div class="flex justify-between items-center">
@@ -158,20 +171,26 @@
                     </div>
                     {% endif %}
                 </div>
-                <!-- ปุ่มติดตามพัสดุ -->
-                <a href="{% url 'orders:tracking' order_id=order.id %}"
-                    style="display: block; margin-top: 1rem; width: 100%; text-align: center; padding: 0.75rem 1rem; background: linear-gradient(to right, #8B5CF6, #4F46E5); color: white; border-radius: 0.5rem; font-weight: 500; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
+
+                <!-- ลิงค์ติดตามพัสดุโดยตรง -->
+                <div class="mt-3 flex gap-2">
+                    {% if tracking_deep_link %}
+                    <a href="{{ tracking_deep_link }}" target="_blank" rel="noopener noreferrer"
+                        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-white rounded-lg font-medium text-sm transition-all shadow-sm"
+                        style="background-color: #570010;" onmouseover="this.style.backgroundColor='#3d000b'"
+                        onmouseout="this.style.backgroundColor='#570010'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                        ติดตามพัสดุ
-                    </span>
-                </a>
+                        ไปที่เว็บไซต์ของ {{ order.shipping_carrier }}
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
+
+
 
             <!-- Payment Instructions (for buyer) -->
             {% if order.buyer == request.user and order.status == 'pending_payment' %}
@@ -243,22 +262,24 @@
                                 placeholder="กรอกเลขพัสดุ เช่น TH12345678901"
                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
                         </div>
-                        <button type="submit"
-                            class="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all">
+                        <button type="submit" class="w-full py-3 px-4 text-white rounded-lg font-medium transition-all"
+                            style="background-color: #570010;" onmouseover="this.style.backgroundColor='#3d000b'"
+                            onmouseout="this.style.backgroundColor='#570010'">
                             ยืนยันการจัดส่ง
                         </button>
                     </form>
                 </div>
                 {% elif order.status == 'shipped' %}
-                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <div style="background-color: #fdf2f4; border: 1px solid #c9a0a8;" class="rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" style="color: #570010;" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                         </svg>
-                        <h3 class="font-bold text-purple-800">จัดส่งแล้ว</h3>
+                        <h3 class="font-bold" style="color: #570010;">จัดส่งแล้ว</h3>
                     </div>
-                    <p class="text-sm text-purple-700">คุณได้จัดส่งสินค้าแล้ว รอผู้ซื้อยืนยันการรับสินค้า</p>
+                    <p class="text-sm" style="color: #570010;">คุณได้จัดส่งสินค้าแล้ว รอผู้ซื้อยืนยันการรับสินค้า</p>
                 </div>
                 {% elif order.status == 'completed' %}
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
@@ -368,8 +389,9 @@
                 <form method="post" action="{% url 'orders:confirm_received' order_id=order.id %}" class="flex-1"
                     onsubmit="return confirm('ยืนยันว่าคุณได้รับสินค้าแล้ว?');">
                     {% csrf_token %}
-                    <button type="submit"
-                        class="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all">
+                    <button type="submit" class="w-full py-3 px-4 text-white rounded-lg font-medium transition-all"
+                        style="background-color: #570010;" onmouseover="this.style.backgroundColor='#3d000b'"
+                        onmouseout="this.style.backgroundColor='#570010'">
                         ยืนยันได้รับสินค้า
                     </button>
                 </form>
@@ -449,4 +471,23 @@
     });
 </script>
 {% endif %}
+
+<script>
+    function copyTracking() {
+        const trackingNumber = document.getElementById('tracking-number').textContent.trim();
+        navigator.clipboard.writeText(trackingNumber).then(() => {
+            // เปลี่ยน icon และ text ชั่วคราว
+            document.getElementById('copy-icon').innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`;
+            document.getElementById('copy-text').textContent = 'คัดลอกแล้ว!';
+            // รีเซ็ตกลับหลัง 2 วินาที
+            setTimeout(() => {
+                document.getElementById('copy-icon').innerHTML = `
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />`;
+                document.getElementById('copy-text').textContent = 'คัดลอก';
+            }, 2000);
+        });
+    }
+</script>
 {% endblock %}

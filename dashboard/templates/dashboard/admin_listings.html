@@ -1,0 +1,230 @@
+{% extends "dashboard/base_admin_dashboard.html" %}
+{% load humanize %}
+
+{% block admin_content %}
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 mt-2">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">แอดมินจัดการประกาศ</h1>
+        <p class="text-slate-500 mt-1">อนุมัติ ปฏิเสธ หรือ ลบประกาศขายสินค้า</p>
+    </div>
+</div>
+
+<div class="flex gap-3 mb-6">
+    <a href="?type=marketplace&status={{ status_filter }}"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-200
+            {% if type_filter == 'marketplace' %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+        Marketplace
+    </a>
+    <a href="?type=auction&status={{ status_filter }}"
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-200
+            {% if type_filter == 'auction' %}bg-slate-900 text-white border-slate-900{% else %}bg-white text-slate-600 hover:bg-slate-50{% endif %}">
+        Auction
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex gap-2">
+            <a href="?type={{ type_filter }}&status=pending"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors border
+                   {% if status_filter == 'pending' %}bg-[#570010] text-white border-[#570010]{% else %}bg-white text-slate-600 border-slate-300 hover:border-slate-400{% endif %}">
+                รออนุมัติ ({{ pending_count }})
+            </a>
+            <a href="?type={{ type_filter }}&status=approved"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors border
+                   {% if status_filter == 'approved' %}bg-green-600 text-white border-green-600{% else %}bg-white text-slate-600 border-slate-300 hover:border-slate-400{% endif %}">
+                อนุมัติแล้ว
+            </a>
+            <a href="?type={{ type_filter }}&status=rejected"
+                class="px-3 py-1 rounded-full text-xs font-medium transition-colors border
+                   {% if status_filter == 'rejected' %}bg-red-600 text-white border-red-600{% else %}bg-white text-slate-600 border-slate-300 hover:border-slate-400{% endif %}">
+                ปฏิเสธแล้ว
+            </a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4">สินค้า</th>
+                    <th class="px-6 py-4">ประเภท</th>
+                    <th class="px-6 py-4">ราคา</th>
+                    <th class="px-6 py-4">ผู้ขาย</th>
+                    <th class="px-6 py-4">สถานะ</th>
+                    <th class="px-6 py-4 text-right">ดำเนินการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for item in listings %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                {% if item.image %}
+                                <img src="{{ item.image.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-slate-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="text-slate-900 font-medium truncate max-w-[200px]"
+                                    title="{% if type_filter == 'marketplace' %}{{ item.name }}{% else %}{{ item.product.name }}{% endif %}">
+                                    {% if type_filter == 'marketplace' %}{{ item.name }}{% else %}{{ item.product.name}}{% endif %}
+                                </div>
+                                <div class="text-xs text-slate-500 mt-0.5">
+                                    {{ item.created_at|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                            {% if type_filter == 'marketplace' %}Marketplace{% else %}Auction{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-900">
+                        {% if type_filter == 'marketplace' %}
+                        ฿{{ item.price|intcomma }}
+                        {% else %}
+                        ฿{{ item.starting_price|intcomma }}
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-6 h-6 rounded-full bg-[#570010] text-white flex items-center justify-center text-xs font-bold">
+                                {{ item.seller.get_full_name_display|first|upper }}
+                            </div>
+                            <span class="text-slate-600 truncate max-w-[100px]">{{ item.seller.get_full_name_display }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if item.status == 'approved' or item.status == 'live' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            อนุมัติแล้ว
+                        </span>
+                        {% elif item.status == 'pending' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            รอตรวจสอบ
+                        </span>
+                        {% elif item.status == 'rejected' or item.status == 'canceled' %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            ปฏิเสธ/ยกเลิก
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                            {{ item.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% if type_filter == 'marketplace' %}{% url 'products:product_detail' item.pk %}{% else %}{% url 'auctions:auction_detail' item.pk %}{% endif %}"
+                                target="_blank"
+                                class="p-2 text-slate-400 hover:text-[#570010] hover:bg-[#fdf2f4] rounded-lg transition-colors"
+                                title="ดูรายละเอียด">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+
+                            {% if item.status == 'pending' %}
+                            <form method="post"
+                                action="{% url 'dashboard:admin_listing_action' item.pk %}?type={{ type_filter }}"
+                                class="inline">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="approve"
+                                    class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                    title="อนุมัติ" onclick="return confirm('ยืนยันอนุมัติประกาศนี้?')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </form>
+                            <form method="post"
+                                action="{% url 'dashboard:admin_listing_action' item.pk %}?type={{ type_filter }}"
+                                class="inline">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="reject"
+                                    class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="ปฏิเสธ"
+                                    onclick="return confirm('ยืนยันปฏิเสธประกาศนี้?')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <form method="post"
+                                action="{% url 'dashboard:admin_listing_action' item.pk %}?type={{ type_filter }}"
+                                class="inline">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="delete"
+                                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="ลบประกาศ"
+                                    onclick="return confirm('ยืนยันลบประกาศนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>ไม่พบรายการประกาศในช่วงเวลานี้</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+        <span class="text-sm text-slate-500">
+            หน้า {{ page_obj.number }} จาก {{ page_obj.paginator.num_pages }}
+        </span>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&type={{ type_filter }}&status={{ status_filter }}"
+                class="px-3 py-1 bg-white border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-50">ก่อนหน้า</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&type={{ type_filter }}&status={{ status_filter }}"
+                class="px-3 py-1 bg-white border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-50">ถัดไป</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

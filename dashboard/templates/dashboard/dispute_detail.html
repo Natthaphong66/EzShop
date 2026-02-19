@@ -1,268 +1,256 @@
-{% extends "base.html" %}
+{% extends "dashboard/base_admin_dashboard.html" %}
 {% load humanize %}
 
-{% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <div class="flex items-center gap-3 mb-6 mt-2">
-        <a href="{% url 'dashboard:dispute_list' %}"
-            class="text-slate-500 hover:text-slate-700 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-        </a>
-        <h1 class="text-2xl font-bold text-slate-900">รายละเอียดเคสข้อพิพาท</h1>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+{% block admin_content %}
+<!-- Header -->
+<div class="flex items-center gap-3 mb-6 mt-2">
+    <a href="{% url 'dashboard:dispute_list' %}" class="text-slate-500 hover:text-slate-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+    <h1 class="text-2xl font-bold text-slate-900">รายละเอียดเคสข้อพิพาท</h1>
+    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
             {% if dispute.status == 'open' %}bg-orange-100 text-orange-800
             {% elif dispute.status == 'under_review' %}bg-blue-100 text-blue-800
             {% elif dispute.status == 'resolved_refund' %}bg-green-100 text-green-800
             {% elif dispute.status == 'resolved_partial' %}bg-purple-100 text-purple-800
             {% elif dispute.status == 'resolved_rejected' %}bg-red-100 text-red-800
             {% endif %}">
-            {{ dispute.get_status_display }}
-        </span>
-    </div>
+        {{ dispute.get_status_display }}
+    </span>
+</div>
 
-    <!-- Row 1: ข้อมูลคำสั่งซื้อ + บัญชีรับเงินคืน -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- ข้อมูลคำสั่งซื้อ -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Info (Left) -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Order & Product -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-3 border-b border-slate-200 bg-slate-50">
-                <h2 class="font-semibold text-slate-800">ข้อมูลคำสั่งซื้อ</h2>
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <h2 class="font-semibold text-slate-900">ข้อมูลคำสั่งซื้อ</h2>
+                <a href="{% url 'orders:order_detail' dispute.order.id %}" target="_blank"
+                    class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    ดูคำสั่งซื้อ #{{ dispute.order.id|stringformat:"s"|slice:":8" }} &nearr;
+                </a>
             </div>
-            <div class="p-5">
-                <div class="flex gap-4 mb-4">
-                    {% if order.product.image %}
-                    <img src="{{ order.product.image.url }}" alt="{{ order.product.name }}"
-                        class="w-16 h-16 object-cover rounded-lg border border-slate-200">
-                    {% else %}
-                    <div class="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+            <div class="p-6">
+                <div class="flex gap-4">
+                    <div class="w-20 h-20 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                        {% if dispute.order.product.image %}
+                        <img src="{{ dispute.order.product.image.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-slate-300">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     <div class="flex-1">
-                        <h3 class="font-semibold text-slate-800">{{ order.product.name }}</h3>
-                        <p class="text-lg font-bold text-green-600">฿{{ order.amount|floatformat:0|intcomma }}</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    <div class="bg-slate-50 rounded-lg p-2.5">
-                        <span class="text-xs text-slate-500">ผู้ซื้อ</span>
-                        <p class="font-medium text-slate-800 text-sm">{{ order.buyer.get_full_name_display }}</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-2.5">
-                        <span class="text-xs text-slate-500">ผู้ขาย</span>
-                        <p class="font-medium text-slate-800 text-sm">{{ order.seller.get_full_name_display }}</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-2.5">
-                        <span class="text-xs text-slate-500">วันที่สั่งซื้อ</span>
-                        <p class="font-medium text-slate-800 text-sm">{{ order.created_at|date:"d M Y H:i" }}</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-2.5">
-                        <span class="text-xs text-slate-500">เลขพัสดุ</span>
-                        <p class="font-medium text-slate-800 text-sm">{% if order.tracking_number %}{{ order.tracking_number }}{% else %}-{% endif %}</p>
+                        <h3 class="font-medium text-slate-900 text-lg">{{ dispute.order.product.name }}</h3>
+                        <div class="mt-1 text-slate-500 text-sm">
+                            จำนวนเงิน: <span class="font-semibold text-slate-900">฿{{ dispute.order.amount|intcomma
+                                }}</span>
+                        </div>
+                        <div class="mt-2 flex items-center gap-4 text-sm text-slate-500">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                ผู้ซื้อ: {{ dispute.buyer.get_full_name_display }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                                    </path>
+                                </svg>
+                                ผู้ขาย: {{ dispute.order.seller.get_full_name_display }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- บัญชีรับเงินคืน -->
+        <!-- Dispute Details -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-3 border-b border-slate-200 bg-blue-50">
-                <h2 class="font-semibold text-blue-800 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    บัญชีรับเงินคืน
-                </h2>
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                <h2 class="font-semibold text-slate-900">รายละเอียดข้อพิพาท</h2>
             </div>
-            <div class="p-5">
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="flex items-center justify-between bg-slate-50 rounded-lg p-4">
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-1">สาเหตุ</label>
+                    <p class="text-slate-900 font-medium">{{ dispute.get_reason_display }}</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-1">รายละเอียดจากผู้ซื้อ</label>
+                    <div
+                        class="bg-slate-50 p-4 rounded-lg text-slate-700 text-sm leading-relaxed border border-slate-100">
+                        {{ dispute.description }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-3">หลักฐาน</label>
+                    <div class="flex flex-wrap gap-4">
+                        {% if dispute.evidence_1 %}
+                        <a href="{{ dispute.evidence_1.url }}" target="_blank"
+                            class="group relative block w-32 h-32 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                            <img src="{{ dispute.evidence_1.url }}"
+                                class="w-full h-full object-cover transition-transform group-hover:scale-105">
+                            <div
+                                class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </a>
+                        {% endif %}
+                        {% if dispute.evidence_2 %}
+                        <a href="{{ dispute.evidence_2.url }}" target="_blank"
+                            class="group relative block w-32 h-32 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                            <img src="{{ dispute.evidence_2.url }}"
+                                class="w-full h-full object-cover transition-transform group-hover:scale-105">
+                            <div
+                                class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </a>
+                        {% endif %}
+                        {% if dispute.evidence_3 %}
+                        <a href="{{ dispute.evidence_3.url }}" target="_blank"
+                            class="group relative block w-32 h-32 rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                            <img src="{{ dispute.evidence_3.url }}"
+                                class="w-full h-full object-cover transition-transform group-hover:scale-105">
+                            <div
+                                class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </a>
+                        {% endif %}
+                        {% if not dispute.evidence_1 and not dispute.evidence_2 and not dispute.evidence_3 %}
+                        <p class="text-sm text-slate-400 italic">ไม่มีรูปภาพหลักฐาน</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refund Info -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                <h2 class="font-semibold text-slate-900">ข้อมูลการรับเงินคืน</h2>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-1">ธนาคาร</label>
+                    <p class="text-slate-900">{{ dispute.get_bank_name_display }}</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-1">เลขที่บัญชี</label>
+                    <p class="text-slate-900 font-mono tracking-wide">{{ dispute.bank_account_number }}</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 uppercase mb-1">ชื่อบัญชี</label>
+                    <p class="text-slate-900">{{ dispute.bank_account_name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Panel (Right) -->
+    <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden sticky top-24">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900">การดำเนินการ</h3>
+                <p class="text-xs text-slate-500 mt-1">เลือกการตัดสินสำหรับเคสนี้</p>
+            </div>
+
+            {% if dispute.status == 'open' or dispute.status == 'under_review' %}
+            <div class="p-6 space-y-4">
+                <form method="post" action="{% url 'dashboard:dispute_action' dispute.id %}">
+                    {% csrf_token %}
+                    <div class="space-y-4">
                         <div>
-                            <span class="text-xs text-slate-500">ธนาคาร</span>
-                            <p class="font-semibold text-slate-800">{{ dispute.get_bank_name_display }}</p>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">บันทึกเพิ่มเติม (Admin
+                                Note)</label>
+                            <textarea name="admin_note" rows="3"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:ring-[#570010] focus:border-[#570010]"
+                                placeholder="เหตุผลการตัดสิน..."></textarea>
                         </div>
-                        <div class="text-right">
-                            <span class="text-xs text-slate-500">ชื่อบัญชี</span>
-                            <p class="font-medium text-slate-800">{{ dispute.bank_account_name }}</p>
+
+                        <button type="submit" name="action" value="refund_full"
+                            class="w-full py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            คืนเงินเต็มจำนวน
+                        </button>
+
+                        <button type="submit" name="action" value="reject"
+                            class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            ปฏิเสธ (ไม่คืนเงิน)
+                        </button>
+
+                        {% if dispute.status == 'open' %}
+                        <div class="relative flex py-2 items-center">
+                            <div class="flex-grow border-t border-slate-200"></div>
+                            <span class="flex-shrink-0 mx-4 text-slate-300 text-xs">หรือ</span>
+                            <div class="flex-grow border-t border-slate-200"></div>
                         </div>
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-4 text-center">
-                        <span class="text-xs text-slate-500">เลขบัญชี</span>
-                        <p class="font-mono font-bold text-slate-800 text-2xl tracking-wider mt-1">{{ dispute.bank_account_number }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Row 2: รายละเอียดปัญหา + หลักฐาน -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- รายละเอียดปัญหา -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-3 border-b border-slate-200 bg-red-50">
-                <h2 class="font-semibold text-red-800">รายละเอียดปัญหา</h2>
+                        <button type="submit" name="action" value="under_review"
+                            class="w-full py-2.5 px-4 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg font-medium shadow-sm transition-colors text-sm">
+                            เปลี่ยนสถานะเป็น "กำลังตรวจสอบ"
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
             </div>
-            <div class="p-5 space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        {{ dispute.get_reason_display }}
-                    </span>
-                    <span class="text-xs text-slate-400">{{ dispute.created_at|date:"d M Y H:i" }}</span>
-                </div>
-                <p class="text-slate-800 bg-slate-50 rounded-lg p-4 whitespace-pre-wrap text-sm">{{ dispute.description }}</p>
-            </div>
-        </div>
-
-        <!-- หลักฐาน -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-3 border-b border-slate-200 bg-amber-50">
-                <h2 class="font-semibold text-amber-800">หลักฐาน</h2>
-            </div>
-            <div class="p-5">
-                {% if dispute.evidence_1 or dispute.evidence_2 or dispute.evidence_3 %}
-                <div class="grid grid-cols-3 gap-3">
-                    {% if dispute.evidence_1 %}
-                    <a href="{{ dispute.evidence_1.url }}" target="_blank" class="block">
-                        <img src="{{ dispute.evidence_1.url }}" class="w-full h-36 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity">
-                    </a>
-                    {% endif %}
-                    {% if dispute.evidence_2 %}
-                    <a href="{{ dispute.evidence_2.url }}" target="_blank" class="block">
-                        <img src="{{ dispute.evidence_2.url }}" class="w-full h-36 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity">
-                    </a>
-                    {% endif %}
-                    {% if dispute.evidence_3 %}
-                    <a href="{{ dispute.evidence_3.url }}" target="_blank" class="block">
-                        <img src="{{ dispute.evidence_3.url }}" class="w-full h-36 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity">
-                    </a>
-                    {% endif %}
-                </div>
-                {% else %}
-                <div class="text-center py-8 text-slate-400">
-                    <svg class="mx-auto h-10 w-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {% else %}
+            <div class="p-6 bg-slate-50 text-center">
+                <div
+                    class="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                        </path>
                     </svg>
-                    <p class="text-sm">ไม่มีรูปหลักฐาน</p>
                 </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+                <p class="font-medium text-slate-900">เคสนี้ถูกตัดสินแล้ว</p>
+                <p class="text-xs text-slate-500 mt-1">โดย {{ dispute.resolved_by.get_full_name_display }} เมื่อ {{
+                    dispute.resolved_at|date:"d/m/Y H:i" }}</p>
 
-    <!-- Row 3: ดำเนินการ / ผลการตัดสิน -->
-    {% if not dispute.resolved_at %}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-3 border-b border-slate-200 bg-slate-50">
-            <h2 class="font-semibold text-slate-800">ดำเนินการ</h2>
-        </div>
-        <div class="p-5">
-            <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
-                <!-- หมายเหตุ -->
-                <div class="w-full lg:w-1/3">
-                    <label for="admin_note" class="block text-sm font-medium text-slate-700 mb-1">หมายเหตุแอดมิน</label>
-                    <textarea id="admin_note" rows="2" placeholder="ระบุหมายเหตุ (ไม่บังคับ)"
-                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"></textarea>
-                </div>
-
-                <!-- ปุ่มดำเนินการ -->
-                <div class="flex flex-wrap gap-3 flex-1">
-                    {% if dispute.status == 'open' %}
-                    <form method="post" action="{% url 'dashboard:dispute_action' dispute_id=dispute.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="under_review">
-                        <button type="submit"
-                            class="py-2.5 px-5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors">
-                            รับเคสตรวจสอบ
-                        </button>
-                    </form>
-                    {% endif %}
-
-                    <form method="post" action="{% url 'dashboard:dispute_action' dispute_id=dispute.id %}"
-                        onsubmit="this.querySelector('[name=admin_note]').value = document.getElementById('admin_note').value; return confirm('ยืนยันคืนเงินเต็มจำนวน ฿{{ order.amount|floatformat:0 }}?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="refund">
-                        <input type="hidden" name="admin_note" value="">
-                        <button type="submit"
-                            class="py-2.5 px-5 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition-colors">
-                            คืนเงินเต็มจำนวน (฿{{ order.amount|floatformat:0|intcomma }})
-                        </button>
-                    </form>
-
-                    <form method="post" action="{% url 'dashboard:dispute_action' dispute_id=dispute.id %}" class="flex gap-2"
-                        onsubmit="this.querySelector('[name=admin_note]').value = document.getElementById('admin_note').value; return confirm('ยืนยันคืนเงินบางส่วน?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="partial_refund">
-                        <input type="hidden" name="admin_note" value="">
-                        <input type="number" name="refund_amount" placeholder="จำนวนเงิน" step="0.01" min="1"
-                            max="{{ order.amount }}"
-                            class="w-32 px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-purple-400">
-                        <button type="submit"
-                            class="py-2.5 px-5 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-colors whitespace-nowrap">
-                            คืนบางส่วน
-                        </button>
-                    </form>
-
-                    <form method="post" action="{% url 'dashboard:dispute_action' dispute_id=dispute.id %}"
-                        onsubmit="this.querySelector('[name=admin_note]').value = document.getElementById('admin_note').value; return confirm('ยืนยันปฏิเสธการคืนเงิน?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="reject">
-                        <input type="hidden" name="admin_note" value="">
-                        <button type="submit"
-                            class="py-2.5 px-5 border border-red-300 text-red-600 rounded-lg font-medium text-sm hover:bg-red-50 transition-colors">
-                            ปฏิเสธการคืนเงิน
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <!-- ผลการตัดสิน -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-3 border-b border-slate-200 bg-green-50">
-            <h2 class="font-semibold text-green-800">ผลการตัดสิน</h2>
-        </div>
-        <div class="p-5">
-            <div class="flex flex-wrap gap-6 text-sm">
-                <div>
-                    <span class="text-slate-500">สถานะ</span>
-                    <p class="font-semibold mt-0.5
-                        {% if dispute.status == 'resolved_refund' %}text-green-700
-                        {% elif dispute.status == 'resolved_partial' %}text-purple-700
-                        {% elif dispute.status == 'resolved_rejected' %}text-red-700{% endif %}">
-                        {{ dispute.get_status_display }}
-                    </p>
-                </div>
-                {% if dispute.refund_amount %}
-                <div>
-                    <span class="text-slate-500">เงินคืน</span>
-                    <p class="font-bold text-green-600 mt-0.5">฿{{ dispute.refund_amount|floatformat:0|intcomma }}</p>
-                </div>
-                {% endif %}
-                <div>
-                    <span class="text-slate-500">ผู้ตัดสิน</span>
-                    <p class="font-medium text-slate-800 mt-0.5">{{ dispute.resolved_by.get_full_name_display }}</p>
-                </div>
-                <div>
-                    <span class="text-slate-500">วันที่ตัดสิน</span>
-                    <p class="text-slate-800 mt-0.5">{{ dispute.resolved_at|date:"d M Y H:i" }}</p>
-                </div>
                 {% if dispute.admin_note %}
-                <div class="w-full">
-                    <span class="text-slate-500">หมายเหตุ</span>
-                    <p class="mt-1 text-slate-800 bg-slate-50 rounded-lg p-3">{{ dispute.admin_note }}</p>
+                <div class="mt-4 text-left bg-white p-3 rounded border border-slate-200">
+                    <p class="text-xs font-medium text-slate-500 mb-1">Admin Note:</p>
+                    <p class="text-sm text-slate-700">{{ dispute.admin_note }}</p>
                 </div>
                 {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
 {% endblock %}
