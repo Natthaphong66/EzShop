@@ -220,3 +220,6 @@ AGORA_APP_ID = os.getenv("AGORA_APP_ID", "").strip() if os.getenv("AGORA_APP_ID"
 AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE", "").strip() if os.getenv("AGORA_APP_CERTIFICATE") else ""
 
 SERVER_EMAIL = EMAIL_HOST_USER
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok.io']
+CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app', 'http://*.ngrok-free.app']

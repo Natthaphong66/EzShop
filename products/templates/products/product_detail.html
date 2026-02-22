@@ -1,4 +1,4 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} {% load humanize %} {% block content %}
 <article class="max-w-4xl mx-auto mt-2">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
     <!-- Image Gallery -->
@@ -73,7 +73,7 @@
       <h1 class="text-4xl font-bold text-slate-900 mb-4">{{ product.name }}</h1>
 
       <div class="p-1 mb-4 rounded">
-        <p class="text-3xl font-bold text-black">{{ product.price }} ฿</p>
+        <p class="text-3xl font-bold text-black">฿ {{ product.price|intcomma }}</p>
       </div>
 
       <div class="space-y-3 mb-8">

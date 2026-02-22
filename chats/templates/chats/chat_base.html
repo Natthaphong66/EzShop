@@ -30,15 +30,15 @@
                     <!-- Tabs Header -->
                     <div class="flex border-b border-slate-200 bg-white flex-shrink-0">
                         <a href="{% url 'chats:room_list' %}"
-                            class="flex-1 py-3 text-center text-sm font-medium {% if not filter or filter == 'all' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            class="flex-1 py-3 text-center text-sm font-medium {% if not filter or filter == 'all' %}text-slate-900 border-b-2 border-slate-900{% else %}text-slate-500 hover:text-slate-700{% endif %}">
                             ทั้งหมด
                         </a>
                         <a href="{% url 'chats:room_list' %}?filter=buyers"
-                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'buyers' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'buyers' %}text-slate-900 border-b-2 border-slate-900{% else %}text-slate-500 hover:text-slate-700{% endif %}">
                             แชทกับผู้ซื้อ
                         </a>
                         <a href="{% url 'chats:room_list' %}?filter=sellers"
-                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'sellers' %}text-blue-600 border-b-2 border-blue-600{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+                            class="flex-1 py-3 text-center text-sm font-medium {% if filter == 'sellers' %}text-slate-900 border-b-2 border-slate-900{% else %}text-slate-500 hover:text-slate-700{% endif %}">
                             แชทกับผู้ขาย
                         </a>
                     </div>

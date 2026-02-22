@@ -9,6 +9,8 @@ urlpatterns = [
     path('disputes/<uuid:dispute_id>/', views.DisputeDetailView.as_view(), name='dispute_detail'),
     
     # Management Pages
+    path('users/', views.AdminUserListView.as_view(), name='admin_user_list'),
+    path('users/<uuid:user_id>/action/', views.AdminUserActionView.as_view(), name='admin_user_action'),
     path('products/', views.AdminProductListView.as_view(), name='admin_product_list'),
     path('auctions/', views.AdminAuctionListView.as_view(), name='admin_auction_list'),
     path('livestreams/', views.AdminLiveStreamListView.as_view(), name='admin_livestream_list'),

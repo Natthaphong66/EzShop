@@ -17,7 +17,7 @@
 
 {% block content %}
 <!-- Category Navigation -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-8 mx-auto" style="width: fit-content;">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-8 mx-auto relative z-10 -mt-16" style="width: fit-content;">
     <div class="flex items-center justify-center gap-4 flex-wrap">
         <a href="{% url 'products:product_list' %}?category=electronics"
             class="flex flex-col items-center gap-2 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors group min-w-[80px]">
@@ -162,7 +162,7 @@
             <p class="text-xs text-slate-500 truncate mb-1 mt-auto">
                 หมวดหมู่: {{ product.category|default:"-" }}
             </p>
-            <p class="text-red-600 font-bold text-sm">
+            <p class="text-slate-900 font-bold text-sm">
                 ฿ {{ product.price|intcomma }}
             </p>
         </div>

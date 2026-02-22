@@ -58,7 +58,7 @@
         {{ product.name }}
       </h3>
       <p class="text-xs text-slate-500 truncate mb-1 mt-auto">หมวดหมู่: {{ product.category|default:"-" }}</p>
-      <p class="text-red-600 font-bold text-base">฿ {{ product.price|intcomma }}</p>
+      <p class="text-slate-900 font-bold text-base">฿ {{ product.price|intcomma }}</p>
     </div>
   </a>
   {% endfor %}

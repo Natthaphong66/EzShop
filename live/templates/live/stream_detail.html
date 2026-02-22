@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% load static %} {% block extra_head %}
+{% extends "base.html" %} {% load static %}
+{% block navbar %}{% if user != stream.host %}{{ block.super }}{% endif %}{% endblock %}
+{% block extra_head %}
 <!-- Agora SDK -->
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.21.0.js"></script>
 <style>
@@ -37,7 +39,7 @@
     position: relative;
     left: 50%;
     margin-left: -50vw;
-    height: calc(100vh - 80px);
+    height: {% if user == stream.host %}100vh{% else %}calc(100vh - 80px){% endif %};
     display: flex;
     box-sizing: border-box;
     background: #f3f4f6;
@@ -66,7 +68,7 @@
 
   .video-header {
     flex-shrink: 0;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    background: #DAD9D2;
   }
 
   .video-player-wrapper {
@@ -149,16 +151,21 @@
     <div class="stream-layout">
       <!-- Video Section -->
       <div class="video-section">
-        <!-- Stream Header - Red Gradient -->
+        <!-- Video Player -->
+        <div class="video-player-wrapper">
+          <div id="local-player"></div>
+        </div>
+
+        <!-- Stream Header - Bottom Bar -->
         <div class="video-header p-3 lg:p-4">
           <div class="flex items-center gap-3">
             <!-- Streamer Avatar -->
             {% if stream.host.profile_picture %}
             <img src="{{ stream.host.profile_picture.url }}" alt="{{ stream.host.get_full_name_display }}"
-              class="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg" />
+              class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-400 shadow-lg" />
             {% else %}
             <div
-              class="w-10 h-10 rounded-full bg-white ring-2 ring-white flex items-center justify-center text-red-600 font-bold text-lg shadow-lg">
+              class="w-10 h-10 rounded-full bg-white ring-2 ring-gray-400 flex items-center justify-center text-red-600 font-bold text-lg shadow-lg">
               {{ stream.host.get_full_name_display|first|upper }}
             </div>
             {% endif %}
@@ -166,15 +173,15 @@
             <!-- Streamer Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-white font-semibold text-sm truncate">{{ stream.host.get_full_name_display }}</span>
+                <span class="text-gray-900 font-semibold text-sm truncate">{{ stream.host.get_full_name_display }}</span>
                 <!-- LIVE Badge -->
                 <span
-                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-red-600 text-xs font-bold rounded-full uppercase shadow">
-                  <span class="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-full uppercase shadow">
+                  <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
                   LIVE
                 </span>
               </div>
-              <h1 class="text-white text-sm truncate mt-0.5">
+              <h1 class="text-gray-700 text-sm truncate mt-0.5">
                 {{ stream.title }}
               </h1>
             </div>
@@ -184,7 +191,7 @@
             <form method="post" action="{% url 'live:stream_end' stream.pk %}" class="ml-auto flex-shrink-0">
               {% csrf_token %}
               <button type="submit"
-                class="px-3 py-1.5 bg-white hover:bg-gray-100 text-red-600 rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 shadow">
+                class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-sm transition-all flex items-center gap-1.5 shadow">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
@@ -195,11 +202,6 @@
             </form>
             {% endif %}
           </div>
-        </div>
-
-        <!-- Video Player -->
-        <div class="video-player-wrapper">
-          <div id="local-player"></div>
         </div>
       </div>
 

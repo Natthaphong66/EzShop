@@ -1,0 +1,239 @@
+{% extends 'dashboard/base_admin_dashboard.html' %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <!-- Header Area -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">จัดการผู้ใช้งาน (Users)</h1>
+            <p class="text-slate-500 mt-1">รายการสมาชิกระบบและการจัดการสิทธิ์</p>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-4">
+        {% for message in messages %}
+        <div
+            class="p-4 rounded-xl border {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-700{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% else %}bg-blue-50 border-blue-200 text-blue-700{% endif %}">
+            <div class="flex items-center gap-2">
+                {% if message.tags == 'success' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {% else %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {% endif %}
+                <span class="font-medium">{{ message }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filter & Search Bar -->
+    <div
+        class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap gap-2">
+            <a href="?status=&q={{ search_query|default:'' }}"
+                class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if not current_status %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                ทั้งหมด
+            </a>
+            <a href="?status=active&q={{ search_query|default:'' }}"
+                class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if current_status == 'active' %}bg-green-100 text-green-700 border border-green-200{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                ปกติ (Active)
+            </a>
+            <a href="?status=inactive&q={{ search_query|default:'' }}"
+                class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if current_status == 'inactive' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                ระงับการใช้งาน
+            </a>
+            <a href="?status=staff&q={{ search_query|default:'' }}"
+                class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if current_status == 'staff' %}bg-blue-100 text-blue-700 border border-blue-200{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">
+                ทีมงาน (Staff)
+            </a>
+        </div>
+
+        <!-- Search -->
+        <form method="GET" class="w-full md:w-auto flex gap-2">
+            {% if current_status %}
+            <input type="hidden" name="status" value="{{ current_status }}">
+            {% endif %}
+            <div class="relative flex-1 md:w-64">
+                <input type="text" name="q" value="{{ search_query|default:'' }}"
+                    placeholder="ค้นหาชื่อ, อีเมล, เบอร์..."
+                    class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#570010]/20 focus:border-[#570010]">
+                <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button type="submit"
+                class="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors">
+                ค้นหา
+            </button>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-500 uppercase">Member ID</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-500 uppercase">User</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-500 uppercase">อีเมล / เบอร์โทร</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-500 uppercase">Role / Status</th>
+                        <th class="py-4 px-6 text-xs font-semibold text-slate-500 uppercase text-right">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for user in users %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-4 px-6">
+                            <span class="text-sm font-medium text-slate-600 font-mono">{{ user.get_member_id }}</span>
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
+                                    {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name_display }}"
+                                        class="w-full h-full object-cover">
+                                    {% else %}
+                                    <span class="text-slate-500 font-bold" style="color:#570010;">{{
+                                        user.get_full_name_display|first|upper }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900">{{ user.get_full_name_display }}</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">เข้าร่วม {{ user.created_at|date:"d M Y" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <p class="text-sm text-slate-700">{{ user.email }}</p>
+                            <p class="text-xs text-slate-500 mt-0.5">{{ user.phone|default:"-" }}</p>
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="flex flex-col items-start gap-1.5">
+                                {% if user.is_superuser %}
+                                <span
+                                    class="px-2.5 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold">Superuser</span>
+                                {% elif user.is_staff %}
+                                <span
+                                    class="px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold">Staff</span>
+                                {% else %}
+                                <span
+                                    class="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium">สมาชิกทั่วไป</span>
+                                {% endif %}
+
+                                {% if not user.is_active %}
+                                <span
+                                    class="px-2.5 py-1 bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-bold inline-flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636">
+                                        </path>
+                                    </svg>
+                                    ถูกแบน
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <!-- View Profile -->
+                                <a href="{% url 'accounts:public_profile' user.id %}" target="_blank"
+                                    class="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors tooltip-trigger"
+                                    title="ส่องโปรไฟล์">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </a>
+
+                                {% if not user.is_superuser or request.user.is_superuser %}
+                                {% if user != request.user %}
+
+                                <!-- Toggle Ban -->
+                                <form method="POST" action="{% url 'dashboard:admin_user_action' user.id %}"
+                                    class="inline" onsubmit="return confirm('ยืนยันทำรายการนี้?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_ban">
+                                    {% if user.is_active %}
+                                    <button type="submit"
+                                        class="p-2 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors tooltip-trigger"
+                                        title="แบนผู้ใช้งาน">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    {% else %}
+                                    <button type="submit"
+                                        class="p-2 text-green-400 hover:text-green-700 hover:bg-green-50 rounded-xl transition-colors tooltip-trigger"
+                                        title="ปลดแบน">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+                                </form>
+
+                                <!-- Toggle Staff -->
+                                {% if request.user.is_superuser %}
+                                <form method="POST" action="{% url 'dashboard:admin_user_action' user.id %}"
+                                    class="inline" onsubmit="return confirm('ยืนยันทำรายการนี้?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_staff">
+                                    <button type="submit"
+                                        class="p-2 {% if user.is_staff %}text-blue-600 hover:bg-blue-50{% else %}text-slate-400 hover:text-blue-600 hover:bg-blue-50{% endif %} rounded-xl transition-colors tooltip-trigger"
+                                        title="สลับสิทธิ์ Staff">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-slate-500">
+                            ไม่มีพบข้อมูลผู้ใช้งานที่ตรงตามเงื่อนไข
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+</script>
+{% endblock %}

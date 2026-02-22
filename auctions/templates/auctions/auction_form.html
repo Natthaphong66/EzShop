@@ -13,10 +13,10 @@
     <div class="flex border-b border-slate-200 mb-8">
         <a href="{% url 'products:product_create' %}"
             class="px-6 py-3 text-slate-500 font-medium hover:text-slate-700 hover:border-slate-300 border-b-2 border-transparent transition-colors">
-            ขายสินค้าปกติ
+            มาร์เก็ตเพลส
         </a>
-        <a href="#" class="px-6 py-3 text-red-600 font-medium border-b-2 border-red-600 transition-colors">
-            ประมูลสินค้า
+        <a href="#" class="px-6 py-3 text-slate-900 font-medium border-b-2 border-slate-900 transition-colors">
+            ประมูล
         </a>
     </div>
 
@@ -203,26 +203,25 @@
                 ตั้งค่าการประมูล
             </h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Duration label spanning hours + minutes -->
+            <div class="mb-1">
+                <label class="block text-sm font-medium text-slate-700">ระยะเวลาเปิดประมูล</label>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-1">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">ระยะเวลาเปิดประมูล</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs text-slate-500 mb-1">{{ form.duration_hours.label }}</label>
-                            {{ form.duration_hours }}
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-500 mb-1">{{ form.duration_minutes.label }}</label>
-                            {{ form.duration_minutes }}
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-1">กำหนดได้ระหว่าง 1–2 ชั่วโมง (เช่น 1 ชม. 30 นาที)</p>
+                    <label class="block text-xs text-slate-500 mb-1">{{ form.duration_hours.label }}</label>
+                    {{ form.duration_hours }}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.starting_price.label }}</label>
+                    <label class="block text-xs text-slate-500 mb-1">{{ form.duration_minutes.label }}</label>
+                    {{ form.duration_minutes }}
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-500 mb-1">{{ form.starting_price.label }}</label>
                     {{ form.starting_price }}
                 </div>
             </div>
+            <p class="text-xs text-slate-500 mb-6">กำหนดได้ระหว่าง 1–2 ชั่วโมง (เช่น 1 ชม. 30 นาที)</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>

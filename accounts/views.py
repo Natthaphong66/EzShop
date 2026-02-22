@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
+from django.contrib.auth import login
 from .models import User
 from .forms import CustomUserCreationForm, ProfileUpdateForm
 
@@ -16,8 +17,12 @@ from .forms import CustomUserCreationForm, ProfileUpdateForm
 class SignUpView(generic.CreateView):
     form_class = CustomUserCreationForm
     template_name = 'accounts/register.html'
-    success_url = reverse_lazy('accounts:login')
-   
+    success_url = reverse_lazy('home')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        login(self.request, self.object)
+        return response
 
 class ProfileView(LoginRequiredMixin, TemplateView):
     """หน้าโปรไฟล์หลักที่แสดงข้อมูลและแท็บ"""
@@ -83,15 +88,28 @@ class PublicProfileView(TemplateView):
 
         try:
             from products.models import Product
-            products = Product.objects.filter(
+            from auctions.models import Auction
+            all_approved_products = Product.objects.filter(
                 seller=profile_user,
                 status=Product.Status.APPROVED,
                 is_sold=False,
-            ).exclude(auction__isnull=False).order_by('-created_at')
-            context['products'] = products[:8]
-            context['products_count'] = products.count()
+            ).order_by('-created_at')
+            
+            auction_product_ids = Auction.objects.filter(seller=profile_user).values_list('product_id', flat=True)
+            
+            marketplace_products = all_approved_products.exclude(id__in=auction_product_ids)
+            auction_products = all_approved_products.filter(id__in=auction_product_ids).select_related('auction')
+            
+            context['marketplace_products'] = marketplace_products
+            context['marketplace_count'] = marketplace_products.count()
+            context['auction_products'] = auction_products
+            context['auction_count'] = auction_products.count()
+            context['products_count'] = all_approved_products.count()
         except Exception:
-            context['products'] = []
+            context['marketplace_products'] = []
+            context['marketplace_count'] = 0
+            context['auction_products'] = []
+            context['auction_count'] = 0
             context['products_count'] = 0
 
         try:

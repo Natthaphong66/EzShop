@@ -55,11 +55,11 @@
     <div class="border-b border-slate-200">
         <nav class="flex -mb-px">
             <a href="?tab=products"
-                class="px-6 py-4 text-sm font-medium border-b-2 transition-colors {% if request.GET.tab != 'reviews' %}border-red-600 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                class="px-6 py-4 text-sm font-medium border-b-2 transition-colors {% if request.GET.tab != 'reviews' %}border-slate-900 text-slate-900{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
                 ประกาศ ({{ products_count }})
             </a>
             <a href="?tab=reviews"
-                class="px-6 py-4 text-sm font-medium border-b-2 transition-colors {% if request.GET.tab == 'reviews' %}border-red-600 text-red-600{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
+                class="px-6 py-4 text-sm font-medium border-b-2 transition-colors {% if request.GET.tab == 'reviews' %}border-slate-900 text-slate-900{% else %}border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300{% endif %}">
                 รีวิว ({{ reviews_count }})
             </a>
         </nav>
@@ -146,21 +146,11 @@
         <div class="mb-5 border-b border-slate-200">
             <nav class="flex gap-1 -mb-px" id="listing-tabs">
                 <button type="button" onclick="switchListingTab('marketplace')" id="tab-marketplace"
-                    class="listing-tab px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors border-red-600 text-red-600 bg-red-50">
-                    <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    สินค้า Marketplace ({{ marketplace_count }})
+                    class="listing-tab px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors border-slate-900 text-slate-900 bg-slate-100">
+                    สินค้ามาร์เก็ตเพลส ({{ marketplace_count }})
                 </button>
                 <button type="button" onclick="switchListingTab('auction')" id="tab-auction"
                     class="listing-tab px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">
-                    <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
                     สินค้าประมูล ({{ auction_count }})
                 </button>
             </nav>
@@ -201,7 +191,7 @@
                             class="font-semibold text-slate-800 text-sm line-clamp-2 mb-1.5 group-hover:text-red-600 transition-colors">
                             {{ product.name }}</h4>
                         <p class="text-xs text-slate-500 truncate mb-1 mt-auto">หมวดหมู่: {{product.category|default:"-" }}</p>
-                        <p class="text-red-600 font-bold text-base">฿ {{ product.price|intcomma }}</p>
+                        <p class="text-slate-900 font-bold text-base">฿ {{ product.price|intcomma }}</p>
                     </div>
                 </a>
                 {% endfor %}
@@ -266,13 +256,19 @@
                             class="font-semibold text-slate-800 text-sm line-clamp-2 mb-1.5 group-hover:text-blue-600 transition-colors">
                             {{ product.name }}</h4>
                         <p class="text-xs text-slate-500 truncate mb-1 mt-auto">หมวดหมู่: {{product.category|default:"-" }}</p>
-                        <div class="flex items-center justify-between mt-1">
-                            <p class="text-orange-600 font-bold text-base">฿ {{ product.auction.starting_price|intcomma}}</p>
-                            {% if product.auction.current_price %}
-                            <p class="text-xs text-slate-500">บิดสูงสุด: <span class="font-semibold text-red-600">฿ {{product.auction.current_price|intcomma }}</span></p>
-                            {% else %}
-                            <p class="text-xs text-slate-400">ยังไม่มีบิด</p>
-                            {% endif %}
+                        <div class="mt-1 space-y-0.5">
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-slate-500">ราคาเริ่มต้น</p>
+                                <p class="text-slate-900 font-bold text-sm">฿{{ product.auction.starting_price|intcomma }}</p>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-slate-500">บิดสูงสุด</p>
+                                {% if product.auction.current_price %}
+                                <p class="text-sm font-bold text-slate-900">฿{{ product.auction.current_price|intcomma }}</p>
+                                {% else %}
+                                <p class="text-xs text-slate-400">ยังไม่มีบิด</p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </a>
@@ -297,14 +293,14 @@
                 document.querySelectorAll('.listing-panel').forEach(p => p.classList.add('hidden'));
                 // Reset all tabs
                 document.querySelectorAll('.listing-tab').forEach(t => {
-                    t.classList.remove('border-red-600', 'text-red-600', 'bg-red-50');
+                    t.classList.remove('border-slate-900', 'text-slate-900', 'bg-slate-100');
                     t.classList.add('border-transparent', 'text-slate-500');
                 });
                 // Show selected panel
                 document.getElementById('panel-' + tab).classList.remove('hidden');
                 // Activate selected tab
                 const activeTab = document.getElementById('tab-' + tab);
-                activeTab.classList.add('border-red-600', 'text-red-600', 'bg-red-50');
+                activeTab.classList.add('border-slate-900', 'text-slate-900', 'bg-slate-100');
                 activeTab.classList.remove('border-transparent', 'text-slate-500');
             }
         </script>

@@ -10,7 +10,8 @@
                 <img src="{{ profile_user.profile_picture.url }}" alt="{{ profile_user.get_full_name_display }}"
                     class="w-24 h-24 rounded-full object-cover border border-slate-200">
                 {% else %}
-                <div class="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
+                <div
+                    class="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M5.121 17.804A9 9 0 1118.364 4.56M15 11a3 3 0 11-6 0 3 3 0 016 0zm-8 8a8.978 8.978 0 0110 0" />
@@ -40,37 +41,136 @@
         </div>
 
         <div class="p-6 sm:p-8">
-            <h2 class="text-lg font-semibold text-slate-900 mb-4">สินค้าล่าสุดของผู้ขาย ({{ products_count }})</h2>
+            <!-- Sub-tabs: Marketplace / Auction -->
+            <div class="mb-5 border-b border-slate-200">
+                <nav class="flex gap-1 -mb-px" id="listing-tabs">
+                    <button type="button" onclick="switchListingTab('marketplace')" id="tab-marketplace"
+                        class="listing-tab px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors border-slate-900 text-slate-900 bg-slate-100">
+                        สินค้ามาร์เก็ตเพลส ({{ marketplace_count }})
+                    </button>
+                    <button type="button" onclick="switchListingTab('auction')" id="tab-auction"
+                        class="listing-tab px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors border-transparent text-slate-500 hover:text-slate-700">
+                        สินค้าประมูล ({{ auction_count }})
+                    </button>
+                </nav>
+            </div>
 
-            {% if products %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {% for product in products %}
-                <a href="{% url 'products:product_detail' product.id %}"
-                    class="block rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all overflow-hidden bg-white">
-                    <div class="aspect-square bg-slate-100">
-                        {% if product.image %}
-                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
-                        {% else %}
-                        <div class="w-full h-full flex items-center justify-center text-slate-400">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+            <!-- Marketplace Products -->
+            <div id="panel-marketplace" class="listing-panel">
+                {% if marketplace_products %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {% for product in marketplace_products %}
+                    <a href="{% url 'products:product_detail' product.id %}"
+                        class="block rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all overflow-hidden bg-white">
+                        <div class="aspect-square bg-slate-100 relative">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                                class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center text-slate-400">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </div>
-                    <div class="p-3">
-                        <p class="font-medium text-slate-900 truncate">{{ product.name }}</p>
-                        <p class="text-red-600 font-semibold mt-1">฿{{ product.price|floatformat:0|intcomma }}</p>
-                    </div>
-                </a>
-                {% endfor %}
+                        <div class="p-3">
+                            <p class="font-medium text-slate-900 truncate">{{ product.name }}</p>
+                            <p class="text-xs text-slate-500 truncate mb-1">หมวดหมู่: {{product.category|default:"-" }}
+                            </p>
+                            <p class="text-slate-900 font-semibold mt-1">฿{{ product.price|floatformat:0|intcomma }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-10 border border-dashed border-slate-300 rounded-xl text-slate-500">
+                    ยังไม่มีสินค้าที่กำลังขาย
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="text-center py-10 border border-dashed border-slate-300 rounded-xl text-slate-500">
-                ยังไม่มีสินค้าที่กำลังขาย
+
+            <!-- Auction Products -->
+            <div id="panel-auction" class="listing-panel hidden">
+                {% if auction_products %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {% for product in auction_products %}
+                    <a href="{% url 'auctions:auction_detail' product.auction.id %}"
+                        class="block rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all overflow-hidden bg-white flex flex-col h-full">
+                        <div class="aspect-square bg-slate-100 relative shrink-0">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                                class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center text-slate-400">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            {% endif %}
+                            <!-- Auction status badge -->
+                            <div class="absolute top-2 right-2">
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                                    {% if product.auction.status == 'live' %}bg-red-100 text-red-700
+                                    {% elif product.auction.status == 'ended' %}bg-slate-100 text-slate-700
+                                    {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                    {% if product.auction.status == 'live' %}🔴 Live
+                                    {% elif product.auction.status == 'ended' %}จบแล้ว
+                                    {% else %}{{ product.auction.get_status_display }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-3 flex-1 flex flex-col">
+                            <p class="font-medium text-slate-900 truncate">{{ product.name }}</p>
+                            <p class="text-xs text-slate-500 truncate mb-1">หมวดหมู่: {{product.category|default:"-" }}
+                            </p>
+
+                            <div class="mt-auto pt-2 space-y-0.5">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs text-slate-500">ราคาเริ่มต้น</p>
+                                    <p class="text-slate-900 font-bold text-sm">฿{{
+                                        product.auction.starting_price|floatformat:0|intcomma }}</p>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs text-slate-500">บิดสูงสุด</p>
+                                    {% if product.auction.current_price %}
+                                    <p class="text-sm font-bold text-slate-900">฿{{
+                                        product.auction.current_price|floatformat:0|intcomma }}</p>
+                                    {% else %}
+                                    <p class="text-xs text-slate-400">ยังไม่มีบิด</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-10 border border-dashed border-slate-300 rounded-xl text-slate-500">
+                    ยังไม่มีสินค้าประมูล
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
+
+            <script>
+                function switchListingTab(tab) {
+                    // Hide all panels
+                    document.querySelectorAll('.listing-panel').forEach(p => p.classList.add('hidden'));
+                    // Reset all tabs
+                    document.querySelectorAll('.listing-tab').forEach(t => {
+                        t.classList.remove('border-slate-900', 'text-slate-900', 'bg-slate-100');
+                        t.classList.add('border-transparent', 'text-slate-500');
+                    });
+                    // Show selected panel
+                    document.getElementById('panel-' + tab).classList.remove('hidden');
+                    // Activate selected tab
+                    const activeTab = document.getElementById('tab-' + tab);
+                    activeTab.classList.add('border-slate-900', 'text-slate-900', 'bg-slate-100');
+                    activeTab.classList.remove('border-transparent', 'text-slate-500');
+                }
+            </script>
         </div>
     </div>
 </div>

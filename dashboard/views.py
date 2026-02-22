@@ -1,6 +1,7 @@
 from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum, Avg, Q
+from django.db import models
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.utils import timezone
@@ -362,7 +363,7 @@ class AdminListingsView(StaffRequiredMixin, TemplateView):
         else:
             products = products.filter(auction__isnull=True)
 
-        context['products'] = products.select_related('seller').order_by('-created_at')
+        context['products'] = products.select_related('seller').prefetch_related('auction').order_by('-created_at')
         context['status_filter'] = status_filter
         context['type_filter'] = type_filter
 
@@ -444,3 +445,75 @@ class AdminListingActionView(StaffRequiredMixin, View):
             messages.error(request, 'คำสั่งไม่ถูกต้อง')
 
         return redirect(request.META.get('HTTP_REFERER', 'dashboard:admin_listings'))
+
+class AdminUserListView(StaffRequiredMixin, TemplateView):
+    """หน้าจัดการผู้ใช้งานสำหรับแอดมิน"""
+    template_name = 'dashboard/admin_user_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        status = self.request.GET.get('status')
+        q = self.request.GET.get('q')
+        
+        users = User.objects.all()
+        
+        if status == 'active':
+            users = users.filter(is_active=True)
+            # Exclude timed out users if we want active to mean truly active, 
+            # or just rely on the template to show timeout status
+        elif status == 'inactive':
+            users = users.filter(is_active=False)
+        elif status == 'staff':
+            users = users.filter(is_staff=True)
+            
+        if q:
+            users = users.filter(
+                models.Q(email__icontains=q) | 
+                models.Q(first_name__icontains=q) | 
+                models.Q(last_name__icontains=q) |
+                models.Q(phone__icontains=q)
+            )
+            
+        context['users'] = users.order_by('-created_at')
+        context['current_status'] = status
+        context['search_query'] = q
+        
+        return context
+
+class AdminUserActionView(StaffRequiredMixin, View):
+    """จัดการ action ต่างๆ สำหรับผู้ใช้ (แบน, ตั้งเป็น staff, timeout)"""
+    
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        action = request.POST.get('action')
+        
+        # Don't allow modifying superusers unless you are one, or prevent it entirely
+        if user.is_superuser and not request.user.is_superuser:
+            messages.error(request, 'ไม่สามารถแก้ไขข้อมูลผู้ดูแลระบบระดับสูงได้')
+            return redirect(request.META.get('HTTP_REFERER', 'dashboard:admin_user_list'))
+            
+        # Don't allow user to modify themselves here
+        if user == request.user:
+            messages.error(request, 'ไม่สามารถทำรายการกับบัญชีของตนเองได้')
+            return redirect(request.META.get('HTTP_REFERER', 'dashboard:admin_user_list'))
+            
+        if action == 'toggle_staff':
+            if not request.user.is_superuser: # only superuser can make staff
+                messages.error(request, "เฉพาะ Superuser เท่านั้นที่สามารถแต่งตั้งหรือถอดถอน Staff ได้")
+            else:
+                user.is_staff = not user.is_staff
+                user.save(update_fields=['is_staff'])
+                status_text = 'แต่งตั้งเป็น Staff' if user.is_staff else 'ถอดถอนจาก Staff'
+                messages.success(request, f'{status_text} สำเร็จสำหรับผู้ใช้ {user.email}')
+                
+        elif action == 'toggle_ban':
+            user.is_active = not user.is_active
+            user.save(update_fields=['is_active'])
+            status_text = 'ปลดแบน' if user.is_active else 'ระงับการใช้งาน'
+            messages.success(request, f'{status_text} สำเร็จสำหรับผู้ใช้ {user.email}')
+            
+        else:
+            messages.error(request, 'คำสั่งไม่ถูกต้อง')
+
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard:admin_user_list'))
