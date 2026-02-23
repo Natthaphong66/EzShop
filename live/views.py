@@ -3,10 +3,8 @@ import uuid
 import json
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, DetailView, CreateView, View
+from django.views.generic import ListView, DetailView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.contrib import messages
 from django.http import JsonResponse
 from django.conf import settings
 from django.utils import timezone

@@ -82,8 +82,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     def get_latest_notifications(self, limit=10):
         """Get latest notifications"""
         from .models import Notification
-        from django.utils import timezone
-        from datetime import timedelta
         
         notifications = Notification.objects.filter(
             user=self.user

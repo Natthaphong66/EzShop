@@ -13,7 +13,6 @@ def send_notification_websocket(user, notification):
         channel_layer = get_channel_layer()
         if channel_layer:
             from django.utils import timezone
-            from datetime import timedelta
             
             # Calculate time ago
             diff = timezone.now() - notification.created_at
@@ -74,29 +73,10 @@ def notify_outbid(auction, previous_bidder, new_amount):
     send_notification_websocket(previous_bidder, notification)
 
 
-def notify_auction_ending_soon(auction, bidder):
-    """แจ้งเตือนเมื่อประมูลใกล้จบ"""
-    Notification.create_notification(
-        user=bidder,
-        notification_type=Notification.NotificationType.AUCTION_ENDING,
-        title='ประมูลใกล้จบแล้ว!',
-        message=f'การประมูล "{auction.product.name}" กำลังจะสิ้นสุดเร็วๆ นี้',
-        link=reverse('auctions:auction_detail', args=[str(auction.id)]),
-        auction=auction
-    )
 
 
-def notify_new_order(order):
-    """แจ้งเตือนผู้ขายเมื่อมีคำสั่งซื้อใหม่"""
-    notification = Notification.create_notification(
-        user=order.seller,
-        notification_type=Notification.NotificationType.ORDER_CREATED,
-        title='มีคำสั่งซื้อใหม่!',
-        message=f'คุณมีคำสั่งซื้อใหม่สำหรับ "{order.product.name}" จำนวน ฿{order.amount:,.2f}',
-        link=reverse('orders:order_detail', args=[str(order.id)]),
-        order=order
-    )
-    send_notification_websocket(order.seller, notification)
+
+
 
 
 def notify_order_paid(order):
@@ -111,16 +91,7 @@ def notify_order_paid(order):
     )
 
 
-def notify_order_shipped(order):
-    """แจ้งเตือนผู้ซื้อเมื่อสินค้าถูกจัดส่ง"""
-    Notification.create_notification(
-        user=order.buyer,
-        notification_type=Notification.NotificationType.ORDER_SHIPPED,
-        title='สินค้าถูกจัดส่งแล้ว!',
-        message=f'คำสั่งซื้อ "{order.product.name}" ถูกจัดส่งแล้ว',
-        link=reverse('orders:order_detail', args=[str(order.id)]),
-        order=order
-    )
+
 
 
 def notify_system(user, title, message, link=''):

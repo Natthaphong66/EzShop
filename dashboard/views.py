@@ -1,8 +1,8 @@
 from django.views.generic import TemplateView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count, Sum, Avg, Q
+from django.db.models import Sum, Avg
 from django.db import models
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta

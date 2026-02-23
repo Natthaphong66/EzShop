@@ -3,7 +3,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib import messages
-from django.db.models import Avg
 
 from .models import Review
 from .forms import ReviewForm

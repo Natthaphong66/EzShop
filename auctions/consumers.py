@@ -104,7 +104,6 @@ class AuctionConsumer(AsyncWebsocketConsumer):
     def get_bid_history(self, limit=20):
         """Get bid history for the auction"""
         from .models import Bid
-        from django.contrib.humanize.templatetags.humanize import naturaltime
         
         bids = Bid.objects.filter(
             auction_id=self.auction_id

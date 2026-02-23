@@ -1,13 +1,12 @@
 from django.urls import reverse_lazy
 from django.views import generic
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import UpdateView, DeleteView
 from django.contrib.auth.views import PasswordChangeView as DjangoPasswordChangeView
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.shortcuts import get_object_or_404, redirect
-from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import login
 from .models import User
 from .forms import CustomUserCreationForm, ProfileUpdateForm

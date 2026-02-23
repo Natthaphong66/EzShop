@@ -11,7 +11,6 @@ from django.views.generic import (
     UpdateView,
 )
 from django.db.models import Q, Avg
-from django.utils import timezone
 
 from .forms import ProductForm
 from .models import Product, ProductImage

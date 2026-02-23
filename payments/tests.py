@@ -185,7 +185,7 @@ class CreatePaymentIntentViewTest(TestCase):
 
     def test_rejects_non_buyer(self):
         """ผู้ใช้ที่ไม่ใช่ผู้ซื้อต้องได้รับ 404"""
-        other = _create_user("0800000099", "other@test.com")
+        _create_user("0800000099", "other@test.com")
         self.client.login(phone="0800000099", password="testpass123")
         url = reverse("payments:create_payment_intent", args=[self.order.id])
         resp = self.client.post(url)
