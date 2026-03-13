@@ -1,0 +1,99 @@
+{% extends 'dashboard/base_admin_dashboard.html' %}
+{% load humanize %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">จัดการคำขอถอนเงิน</h1>
+        <p class="text-slate-500 mt-1">ระบบถอนเงินแบบ Manual: แอดมินโอนจริงและอัปเดตสถานะในระบบ</p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <a href="?status=pending" class="bg-white border rounded-xl p-4 {% if status_filter == 'pending' %}border-[#570010]{% else %}border-slate-200{% endif %}">
+            <p class="text-xs text-slate-500">รอดำเนินการ</p>
+            <p class="text-xl font-bold text-amber-600">{{ count_pending }}</p>
+        </a>
+        <a href="?status=completed" class="bg-white border rounded-xl p-4 {% if status_filter == 'completed' %}border-[#570010]{% else %}border-slate-200{% endif %}">
+            <p class="text-xs text-slate-500">โอนแล้ว</p>
+            <p class="text-xl font-bold text-emerald-600">{{ count_completed }}</p>
+        </a>
+        <a href="?status=rejected" class="bg-white border rounded-xl p-4 {% if status_filter == 'rejected' %}border-[#570010]{% else %}border-slate-200{% endif %}">
+            <p class="text-xs text-slate-500">ปฏิเสธ/ยกเลิก</p>
+            <p class="text-xl font-bold text-red-600">{{ count_rejected }}</p>
+        </a>
+        <a href="?status=all" class="bg-white border rounded-xl p-4 {% if status_filter == 'all' %}border-[#570010]{% else %}border-slate-200{% endif %}">
+            <p class="text-xs text-slate-500">ทั้งหมด</p>
+            <p class="text-xl font-bold text-slate-800">{{ count_all }}</p>
+        </a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        {% if withdrawals %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="text-left px-4 py-3">ผู้ขาย</th>
+                        <th class="text-left px-4 py-3">ยอดถอน</th>
+                        <th class="text-left px-4 py-3">บัญชีปลายทาง</th>
+                        <th class="text-left px-4 py-3">สถานะ</th>
+                        <th class="text-left px-4 py-3">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in withdrawals %}
+                    <tr class="border-t border-slate-100 align-top">
+                        <td class="px-4 py-3">
+                            <p class="font-semibold text-slate-800">{{ item.seller.get_full_name_display }}</p>
+                            <p class="text-xs text-slate-500">{{ item.seller.phone }}</p>
+                            <p class="text-xs text-slate-400">{{ item.created_at|date:"d M Y H:i" }}</p>
+                        </td>
+                        <td class="px-4 py-3 font-semibold">฿{{ item.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3">
+                            <p>{{ item.get_bank_name_display }}</p>
+                            <p class="text-xs text-slate-500">{{ item.bank_account_number }} ({{ item.bank_account_name }})</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-block px-2 py-1 rounded-full text-xs font-medium
+                                {% if item.status == 'pending' %}bg-amber-100 text-amber-800
+                                {% elif item.status == 'completed' %}bg-emerald-100 text-emerald-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.get_status_display }}
+                            </span>
+                            {% if item.transfer_slip %}
+                            <a href="{{ item.transfer_slip.url }}" target="_blank" class="block text-xs text-blue-600 mt-2 hover:underline">ดูสลิปโอนเงิน</a>
+                            {% endif %}
+                            {% if item.admin_note %}
+                            <p class="text-xs text-slate-500 mt-2">{{ item.admin_note }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if item.status == 'pending' %}
+                            <form method="post" action="{% url 'dashboard:admin_withdrawal_action' withdrawal_id=item.id %}" enctype="multipart/form-data" class="space-y-2">
+                                {% csrf_token %}
+                                <textarea name="admin_note" rows="2" placeholder="หมายเหตุแอดมิน" class="w-full border border-slate-300 rounded-lg px-2 py-1 text-xs"></textarea>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">แนบสลิปโอนเงิน (ไม่บังคับ)</label>
+                                    <input type="file" name="transfer_slip" accept="image/*" class="w-full text-xs">
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="submit" name="action" value="complete" class="px-3 py-1.5 text-xs rounded-lg text-white" style="background-color:#059669;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'">ยืนยันการโอน</button>
+                                    <button type="submit" name="action" value="reject" class="px-3 py-1.5 text-xs rounded-lg text-white" style="background-color:#991b1b;" onmouseover="this.style.backgroundColor='#7f1d1d'" onmouseout="this.style.backgroundColor='#991b1b'">ปฏิเสธ</button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <p class="text-xs text-slate-400">ดำเนินการแล้วโดย {{ item.processed_by.get_full_name_display|default:'-' }}</p>
+                            <p class="text-xs text-slate-400">{{ item.processed_at|date:"d M Y H:i"|default:'-' }}</p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-10 text-center text-slate-500">ยังไม่มีคำขอถอนเงิน</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
+from decimal import Decimal
 
 from accounts.models import User
 from products.models import Product
@@ -13,6 +14,8 @@ from orders.models import Order, DisputeCase
 from auctions.models import Auction, Bid
 from reviews.models import Review
 from live.models import LiveStream
+from payments.models import WithdrawalRequest
+from payments.services import complete_withdrawal_request, reject_withdrawal_request, settle_completed_order_to_wallet
 
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -98,6 +101,9 @@ class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         # ===== Dispute Statistics =====
         context['disputes_open'] = DisputeCase.objects.filter(
             status__in=[DisputeCase.Status.OPEN, DisputeCase.Status.UNDER_REVIEW]
+        ).count()
+        context['withdrawals_pending'] = WithdrawalRequest.objects.filter(
+            status=WithdrawalRequest.Status.PENDING
         ).count()
         
         return context
@@ -223,6 +229,10 @@ class DisputeActionView(StaffRequiredMixin, View):
             dispute.order.status = Order.Status.COMPLETED
             dispute.order.save(update_fields=['status', 'updated_at'])
 
+            seller_gross = Decimal(str(dispute.order.amount)) - Decimal(str(refund_amount))
+            if seller_gross > 0:
+                settle_completed_order_to_wallet(dispute.order, gross_amount=seller_gross)
+
             try:
                 from notifications.services import notify_system
                 notify_system(
@@ -260,6 +270,59 @@ class DisputeActionView(StaffRequiredMixin, View):
             messages.success(request, 'ปฏิเสธการคืนเงินเรียบร้อย')
 
         return redirect('dashboard:dispute_detail', dispute_id=dispute_id)
+
+
+class AdminWithdrawalListView(StaffRequiredMixin, TemplateView):
+    template_name = 'dashboard/admin_withdrawal_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        status_filter = self.request.GET.get('status', 'pending')
+        qs = WithdrawalRequest.objects.select_related('seller', 'processed_by')
+
+        if status_filter == 'all':
+            withdrawals = qs
+        else:
+            withdrawals = qs.filter(status=status_filter)
+
+        context['withdrawals'] = withdrawals.order_by('-created_at')
+        context['status_filter'] = status_filter
+        context['count_pending'] = WithdrawalRequest.objects.filter(status=WithdrawalRequest.Status.PENDING).count()
+        context['count_completed'] = WithdrawalRequest.objects.filter(status=WithdrawalRequest.Status.COMPLETED).count()
+        context['count_rejected'] = WithdrawalRequest.objects.filter(status=WithdrawalRequest.Status.REJECTED).count()
+        context['count_all'] = WithdrawalRequest.objects.count()
+        return context
+
+
+class AdminWithdrawalActionView(StaffRequiredMixin, View):
+    def post(self, request, withdrawal_id):
+        withdrawal = get_object_or_404(WithdrawalRequest, id=withdrawal_id)
+        action = request.POST.get('action', '').strip()
+        admin_note = request.POST.get('admin_note', '').strip()
+        transfer_slip = request.FILES.get('transfer_slip')
+
+        try:
+            if action == 'complete':
+                complete_withdrawal_request(
+                    withdrawal=withdrawal,
+                    admin_user=request.user,
+                    admin_note=admin_note,
+                    transfer_slip=transfer_slip,
+                )
+                messages.success(request, 'อัปเดตสถานะการถอนเงินเป็น "โอนแล้ว" เรียบร้อย')
+            elif action == 'reject':
+                reject_withdrawal_request(
+                    withdrawal=withdrawal,
+                    admin_user=request.user,
+                    admin_note=admin_note,
+                )
+                messages.success(request, 'ปฏิเสธคำขอถอนเงินและคืนยอดเข้า Wallet แล้ว')
+            else:
+                messages.error(request, 'คำสั่งไม่ถูกต้อง')
+        except ValueError as error:
+            messages.error(request, str(error))
+
+        return redirect('dashboard:admin_withdrawal_list')
 
 class AdminProductListView(StaffRequiredMixin, TemplateView):
     """หน้าจัดการสินค้าทั้งหมดสำหรับแอดมิน"""

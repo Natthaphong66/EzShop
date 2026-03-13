@@ -15,6 +15,8 @@ urlpatterns = [
     path('auctions/', views.AdminAuctionListView.as_view(), name='admin_auction_list'),
     path('livestreams/', views.AdminLiveStreamListView.as_view(), name='admin_livestream_list'),
     path('disputes/<uuid:dispute_id>/action/', views.DisputeActionView.as_view(), name='dispute_action'),
+    path('withdrawals/', views.AdminWithdrawalListView.as_view(), name='admin_withdrawal_list'),
+    path('withdrawals/<uuid:withdrawal_id>/action/', views.AdminWithdrawalActionView.as_view(), name='admin_withdrawal_action'),
     
     # Admin Listings
     path('listings/', views.AdminListingsView.as_view(), name='admin_listings'),

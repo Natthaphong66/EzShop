@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Order, TrackingEvent, DisputeCase
+from .models import Order, DisputeCase
 
 
 @admin.register(Order)
@@ -151,27 +151,4 @@ class DisputeCaseAdmin(admin.ModelAdmin):
         self.message_user(request, f'ปฏิเสธ {count} เคส')
 
 
-@admin.register(TrackingEvent)
-class TrackingEventAdmin(admin.ModelAdmin):
-    list_display = ['id', 'tracking_number', 'event_type', 'status_tag', 'status_code', 'created_at']
-    list_filter = ['event_type', 'status_tag', 'created_at']
-    search_fields = ['tracking_number', 'order__id', 'dedupe_key']
-    readonly_fields = ['id', 'created_at', 'raw_data', 'dedupe_key']
-    raw_id_fields = ['order']
-    ordering = ['-created_at']
-    fieldsets = (
-        ('Event Info', {
-            'fields': ('id', 'tracking_number', 'event_type', 'order')
-        }),
-        ('Status', {
-            'fields': ('status_code', 'substatus_code', 'status_tag')
-        }),
-        ('Raw Data', {
-            'fields': ('raw_data', 'dedupe_key'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
-        }),
-    )
+

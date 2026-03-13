@@ -130,14 +130,12 @@
                             <div class="mt-auto pt-2 space-y-0.5">
                                 <div class="flex items-center justify-between">
                                     <p class="text-xs text-slate-500">ราคาเริ่มต้น</p>
-                                    <p class="text-slate-900 font-bold text-sm">฿{{
-                                        product.auction.starting_price|floatformat:0|intcomma }}</p>
+                                    <p class="text-slate-900 font-bold text-sm">฿{{product.auction.starting_price|floatformat:0|intcomma }}</p>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <p class="text-xs text-slate-500">บิดสูงสุด</p>
                                     {% if product.auction.current_price %}
-                                    <p class="text-sm font-bold text-slate-900">฿{{
-                                        product.auction.current_price|floatformat:0|intcomma }}</p>
+                                    <p class="text-sm font-bold text-slate-900">฿{{product.auction.current_price|floatformat:0|intcomma }}</p>
                                     {% else %}
                                     <p class="text-xs text-slate-400">ยังไม่มีบิด</p>
                                     {% endif %}

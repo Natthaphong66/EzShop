@@ -13,4 +13,7 @@ urlpatterns = [
     path('<uuid:order_id>/tracking/', views.TrackingView.as_view(), name='tracking'),
     path('my-orders/', views.MyOrdersView.as_view(), name='my_orders'),
     path('my-sales/', views.MySalesView.as_view(), name='my_sales'),
+    path('seller-wallet/', views.SellerWalletView.as_view(), name='seller_wallet'),
+    path('seller-wallet/bank-account/', views.SaveSellerBankAccountView.as_view(), name='save_bank_account'),
+    path('seller-wallet/withdraw/', views.CreateWithdrawalRequestView.as_view(), name='create_withdrawal'),
 ]

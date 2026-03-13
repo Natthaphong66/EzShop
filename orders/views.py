@@ -3,9 +3,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.db import transaction
+from decimal import Decimal, InvalidOperation
 
 from .models import Order, DisputeCase
 from products.models import Product
+from payments.models import Wallet, SellerBankAccount, WithdrawalRequest
+from payments.services import create_withdrawal_request, settle_completed_order_to_wallet
 
 
 class CreateOrderView(LoginRequiredMixin, View):
@@ -151,6 +154,80 @@ class MySalesView(LoginRequiredMixin, ListView):
         return Order.objects.filter(seller=self.request.user)
 
 
+class SellerWalletView(LoginRequiredMixin, ListView):
+    """หน้าวอลเล็ทและรายการถอนเงินของผู้ขาย"""
+    model = WithdrawalRequest
+    template_name = 'orders/seller_wallet.html'
+    context_object_name = 'withdrawals'
+
+    def get_queryset(self):
+        return WithdrawalRequest.objects.filter(seller=self.request.user).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        wallet, _ = Wallet.objects.get_or_create(seller=self.request.user)
+        context['wallet'] = wallet
+        context['bank_account'] = SellerBankAccount.objects.filter(seller=self.request.user).first()
+        context['bank_choices'] = SellerBankAccount.BankChoices.choices
+        return context
+
+
+class SaveSellerBankAccountView(LoginRequiredMixin, View):
+    """บันทึก/อัปเดตบัญชีธนาคารของผู้ขาย"""
+
+    def post(self, request):
+        bank_name = request.POST.get('bank_name', '').strip()
+        account_number = request.POST.get('account_number', '').strip()
+        account_name = request.POST.get('account_name', '').strip()
+
+        valid_banks = [choice[0] for choice in SellerBankAccount.BankChoices.choices]
+        if bank_name not in valid_banks:
+            messages.error(request, 'กรุณาเลือกธนาคารให้ถูกต้อง')
+            return redirect('orders:seller_wallet')
+
+        if not account_number or not account_name:
+            messages.error(request, 'กรุณากรอกข้อมูลบัญชีธนาคารให้ครบ')
+            return redirect('orders:seller_wallet')
+
+        SellerBankAccount.objects.update_or_create(
+            seller=request.user,
+            defaults={
+                'bank_name': bank_name,
+                'account_number': account_number,
+                'account_name': account_name,
+            }
+        )
+        messages.success(request, 'บันทึกบัญชีธนาคารเรียบร้อยแล้ว')
+        return redirect('orders:seller_wallet')
+
+
+class CreateWithdrawalRequestView(LoginRequiredMixin, View):
+    """สร้างคำขอถอนเงินของผู้ขาย"""
+
+    def post(self, request):
+        amount_raw = request.POST.get('amount', '').strip()
+        note = request.POST.get('note', '').strip()
+
+        try:
+            amount = Decimal(amount_raw)
+        except (InvalidOperation, TypeError):
+            messages.error(request, 'จำนวนเงินไม่ถูกต้อง')
+            return redirect('orders:seller_wallet')
+
+        try:
+            create_withdrawal_request(
+                seller=request.user,
+                amount=amount,
+                note=note,
+            )
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('orders:seller_wallet')
+
+        messages.success(request, 'ส่งคำขอถอนเงินเรียบร้อยแล้ว รอแอดมินตรวจสอบ')
+        return redirect('orders:seller_wallet')
+
+
 class CancelOrderView(LoginRequiredMixin, View):
     """ยกเลิกคำสั่งซื้อ"""
     
@@ -219,6 +296,8 @@ class ConfirmReceivedView(LoginRequiredMixin, View):
         # เปลี่ยนสถานะเป็นสำเร็จ
         order.status = Order.Status.COMPLETED
         order.save()
+
+        settle_completed_order_to_wallet(order)
         
         messages.success(request, 'ยืนยันการรับสินค้าเรียบร้อยแล้ว!')
         # Redirect ไปหน้าเขียนรีวิว

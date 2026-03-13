@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center gap-3 mb-6 mt-2 py-4 border-b border-slate-200">
+        <a href="{% url 'accounts:profile' %}" class="p-2 -ml-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <h1 class="text-xl font-bold text-slate-800">Wallet ผู้ขาย</h1>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <p class="text-sm text-slate-500 mb-1">ยอดคงเหลือ (ถอนได้)</p>
+            <p class="text-2xl font-bold text-emerald-600">฿{{ wallet.balance|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <p class="text-sm text-slate-500 mb-1">ยอดรอโอน</p>
+            <p class="text-2xl font-bold text-amber-600">฿{{ wallet.locked_balance|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <p class="text-sm text-slate-500 mb-1">คำขอถอนทั้งหมด</p>
+            <p class="text-2xl font-bold text-slate-800">{{ withdrawals|length }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4">บัญชีธนาคารสำหรับรับเงิน</h2>
+            <form method="post" action="{% url 'orders:save_bank_account' %}" class="space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">ธนาคาร</label>
+                    <select name="bank_name" class="w-full rounded-lg border border-slate-300 px-3 py-2" required>
+                        <option value="">-- เลือกธนาคาร --</option>
+                        {% for value, label in bank_choices %}
+                        <option value="{{ value }}" {% if bank_account and bank_account.bank_name == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">เลขบัญชี / พร้อมเพย์</label>
+                    <input type="text" name="account_number" value="{% if bank_account %}{{ bank_account.account_number }}{% endif %}" class="w-full rounded-lg border border-slate-300 px-3 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">ชื่อบัญชี</label>
+                    <input type="text" name="account_name" value="{% if bank_account %}{{ bank_account.account_name }}{% endif %}" class="w-full rounded-lg border border-slate-300 px-3 py-2" required>
+                </div>
+                <button type="submit" class="px-4 py-2 rounded-lg text-white font-medium" style="background-color:#570010;">บันทึกบัญชีธนาคาร</button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4">ขอถอนเงิน</h2>
+            <form method="post" action="{% url 'orders:create_withdrawal' %}" class="space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">จำนวนเงินที่ต้องการถอน (บาท)</label>
+                    <input type="number" step="0.01" min="0.01" name="amount" class="w-full rounded-lg border border-slate-300 px-3 py-2" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-600 mb-1">หมายเหตุ (ไม่บังคับ)</label>
+                    <textarea name="note" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2"></textarea>
+                </div>
+                <p class="text-xs text-slate-500">เมื่อส่งคำขอแล้ว ระบบจะอายัดยอดไว้ก่อนจนกว่าแอดมินจะโอนสำเร็จหรือปฏิเสธคำขอ</p>
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-lg text-white font-medium"
+                    style="background-color:#059669;"
+                    onmouseover="this.style.backgroundColor='#047857'"
+                    onmouseout="this.style.backgroundColor='#059669'">
+                    ส่งคำขอถอนเงิน
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="text-lg font-semibold text-slate-800">ประวัติคำขอถอนเงิน</h2>
+        </div>
+        {% if withdrawals %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="text-left px-4 py-3">วันที่</th>
+                        <th class="text-left px-4 py-3">จำนวนเงิน</th>
+                        <th class="text-left px-4 py-3">บัญชีปลายทาง</th>
+                        <th class="text-left px-4 py-3">สถานะ</th>
+                        <th class="text-left px-4 py-3">หมายเหตุแอดมิน</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in withdrawals %}
+                    <tr class="border-t border-slate-100">
+                        <td class="px-4 py-3">{{ item.created_at|date:"d M Y H:i" }}</td>
+                        <td class="px-4 py-3 font-semibold">฿{{ item.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3">{{ item.get_bank_name_display }} • {{ item.bank_account_number }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-block px-2 py-1 rounded-full text-xs font-medium
+                                {% if item.status == 'pending' %}bg-amber-100 text-amber-800
+                                {% elif item.status == 'completed' %}bg-emerald-100 text-emerald-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">{{ item.admin_note|default:'-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-10 text-center text-slate-500">ยังไม่มีคำขอถอนเงิน</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

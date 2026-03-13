@@ -50,6 +50,10 @@ class Order(models.Model):
         related_name='orders',
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    seller_wallet_credited = models.BooleanField(
+        default=False,
+        help_text='ระบุว่าออเดอร์นี้ถูกเครดิตเข้าวอลเล็ทผู้ขายแล้วหรือยัง',
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -71,6 +75,7 @@ class Order(models.Model):
             models.Index(fields=['buyer']),
             models.Index(fields=['seller']),
             models.Index(fields=['status']),
+            models.Index(fields=['seller_wallet_credited']),
             models.Index(fields=['stripe_payment_intent_id']),
             models.Index(fields=['tracking_number']),
         ]
@@ -146,43 +151,4 @@ class DisputeCase(models.Model):
         return f"Dispute #{str(self.id)[:8]} - {self.get_reason_display()}"
 
 
-class TrackingEvent(models.Model):
-    """
-    Model to store tracking events received from 17TRACK webhooks.
-    
-    This model serves two purposes:
-    1. Idempotency: Prevent duplicate processing using dedupe_key
-    2. History: Keep a log of all tracking updates for an order
-    """
-    
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    order = models.ForeignKey(
-        Order,
-        on_delete=models.CASCADE,
-        related_name='tracking_events',
-        null=True,
-        blank=True,
-        help_text="The order this event belongs to (null if order not found)"
-    )
-    tracking_number = models.CharField(max_length=100, verbose_name='เลขพัสดุ')
-    event_type = models.CharField(max_length=50, verbose_name='ประเภท event', help_text="e.g., TRACKING_UPDATED, TRACKING_STOPPED")
-    status_code = models.IntegerField(default=0, verbose_name='รหัสสถานะ')
-    substatus_code = models.IntegerField(default=0, verbose_name='รหัสสถานะย่อย')
-    status_tag = models.CharField(max_length=50, blank=True, verbose_name='สถานะ', help_text="e.g., InTransit, Delivered")
-    raw_data = models.JSONField(default=dict, verbose_name='ข้อมูลดิบจาก webhook')
-    dedupe_key = models.CharField(max_length=255, unique=True, verbose_name='Dedupe Key', help_text="tracking_number|last_update_at|status|substatus")
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Tracking Event'
-        verbose_name_plural = 'Tracking Events'
-        indexes = [
-            models.Index(fields=['tracking_number']),
-            models.Index(fields=['order']),
-            models.Index(fields=['dedupe_key']),
-        ]
-    
-    def __str__(self):
-        return f"{self.tracking_number} - {self.event_type} - {self.status_tag}"
 

@@ -129,14 +129,11 @@
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-slate-900 truncate">{{ dispute.order.product.name}}</p>
                         <div class="flex flex-wrap items-center mt-1 gap-x-2 gap-y-1">
-                            <span class="text-sm text-slate-900 font-semibold">฿{{
-                                dispute.order.amount|floatformat:0|intcomma }}</span>
+                            <span class="text-sm text-slate-900 font-semibold">฿{{dispute.order.amount|floatformat:0|intcomma }}</span>
                             <span class="text-slate-300">|</span>
-                            <span class="text-xs text-slate-500">ผู้ซื้อ: {{
-                                dispute.buyer.get_full_name_display}}</span>
+                            <span class="text-xs text-slate-500">ผู้ซื้อ: {{dispute.buyer.get_full_name_display}}</span>
                             <span class="text-slate-300">|</span>
-                            <span class="text-xs text-slate-500">ผู้ขาย: {{dispute.order.seller.get_full_name_display
-                                }}</span>
+                            <span class="text-xs text-slate-500">ผู้ขาย: {{dispute.order.seller.get_full_name_display}}</span>
                         </div>
                         <p class="text-xs text-slate-500 mt-1">
                             <span class="font-medium">สาเหตุ:</span> {{ dispute.get_reason_display }}

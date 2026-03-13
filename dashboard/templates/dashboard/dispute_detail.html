@@ -51,8 +51,7 @@
                     <div class="flex-1">
                         <h3 class="font-medium text-slate-900 text-lg">{{ dispute.order.product.name }}</h3>
                         <div class="mt-1 text-slate-500 text-sm">
-                            จำนวนเงิน: <span class="font-semibold text-slate-900">฿{{ dispute.order.amount|intcomma
-                                }}</span>
+                            จำนวนเงิน: <span class="font-semibold text-slate-900">฿{{ dispute.order.amount|intcomma}}</span>
                         </div>
                         <div class="mt-2 flex items-center gap-4 text-sm text-slate-500">
                             <span class="flex items-center gap-1">
@@ -195,7 +194,7 @@
                                 placeholder="เหตุผลการตัดสิน..."></textarea>
                         </div>
 
-                        <button type="submit" name="action" value="refund_full"
+                        <button type="submit" name="action" value="refund"
                             class="w-full py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -239,8 +238,8 @@
                     </svg>
                 </div>
                 <p class="font-medium text-slate-900">เคสนี้ถูกตัดสินแล้ว</p>
-                <p class="text-xs text-slate-500 mt-1">โดย {{ dispute.resolved_by.get_full_name_display }} เมื่อ {{
-                    dispute.resolved_at|date:"d/m/Y H:i" }}</p>
+                <p class="text-xs text-slate-500 mt-1">โดย {{ dispute.resolved_by.get_full_name_display }} เมื่อ 
+                {{ dispute.resolved_at|date:"d/m/Y H:i" }}</p>
 
                 {% if dispute.admin_note %}
                 <div class="mt-4 text-left bg-white p-3 rounded border border-slate-200">

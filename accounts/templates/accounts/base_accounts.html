@@ -48,6 +48,14 @@
                         </svg>
                         <span>รายการขาย</span>
                     </a>
+                    <a href="{% url 'orders:seller_wallet' %}"
+                        class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors {% if 'seller-wallet' in request.path %}bg-red-50 text-red-700 font-medium{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 9V7a5 5 0 00-10 0v2m-2 0h14a1 1 0 011 1v9a1 1 0 01-1 1H5a1 1 0 01-1-1v-9a1 1 0 011-1z" />
+                        </svg>
+                        <span>Wallet & ถอนเงิน</span>
+                    </a>
                     <a href="{% url 'accounts:profile_delete' %}"
                         class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors {% if request.resolver_match.url_name == 'profile_delete' %}bg-red-50 font-medium{% endif %}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

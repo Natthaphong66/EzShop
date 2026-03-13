@@ -10,9 +10,6 @@ urlpatterns = [
     # Chat room detail - หน้าแชท
     path('room/<uuid:room_id>/', views.ChatRoomView.as_view(), name='room'),
     
-    # Start chat with user (creates or gets existing room)
-    path('start/<uuid:user_id>/', views.StartChatView.as_view(), name='start_chat'),
-    
     # Start chat about a product
     path('start/product/<uuid:product_id>/', views.StartProductChatView.as_view(), name='start_product_chat'),
     

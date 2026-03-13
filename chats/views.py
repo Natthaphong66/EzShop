@@ -1,4 +1,3 @@
-import json
 from django.views import View
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -114,30 +113,6 @@ class ChatRoomView(LoginRequiredMixin, DetailView):
         context['active_room'] = room
         
         return context
-
-
-class StartChatView(LoginRequiredMixin, View):
-    """Start a chat with another user"""
-    
-    def get(self, request, user_id):
-        other_user = get_object_or_404(User, id=user_id)
-        
-        # Don't allow chatting with yourself
-        if other_user == request.user:
-            return redirect('chats:room_list')
-        
-        # Find existing room or create new one
-        room = ChatRoom.objects.filter(
-            participants=request.user
-        ).filter(
-            participants=other_user
-        ).first()
-        
-        if not room:
-            room = ChatRoom.objects.create()
-            room.participants.add(request.user, other_user)
-        
-        return redirect('chats:room', room_id=room.id)
 
 
 class StartProductChatView(LoginRequiredMixin, View):
