@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from accounts.models import User
 from products.models import Product
@@ -207,8 +207,8 @@ class DisputeActionView(StaffRequiredMixin, View):
                 messages.error(request, 'กรุณาระบุจำนวนเงินคืน')
                 return redirect('dashboard:dispute_detail', dispute_id=dispute_id)
             try:
-                refund_amount = round(float(refund_amount), 2)
-            except ValueError:
+                refund_amount = Decimal(refund_amount).quantize(Decimal('0.01'))
+            except (InvalidOperation, TypeError):
                 messages.error(request, 'จำนวนเงินไม่ถูกต้อง')
                 return redirect('dashboard:dispute_detail', dispute_id=dispute_id)
 

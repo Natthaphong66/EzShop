@@ -12,7 +12,6 @@ class User(AbstractUser):
 
     username = None
     email = models.EmailField(unique=True)
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone = models.CharField(max_length=20, unique=True)
     bio = models.TextField(blank=True)

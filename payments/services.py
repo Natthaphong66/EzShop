@@ -15,7 +15,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def _get_platform_fee_rate() -> Decimal:
-    fee_rate = getattr(settings, 'PLATFORM_FEE_RATE', Decimal('0.05'))
+    fee_rate = getattr(settings, 'PLATFORM_FEE_RATE', Decimal('0.025'))
     return Decimal(str(fee_rate))
 
 
