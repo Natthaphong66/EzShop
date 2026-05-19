@@ -421,7 +421,7 @@
      Init Agora
   ================================ */
   async function initAgora() {
-    console.log("🔥 initAgora START");
+    console.log("initAgora START");
 
     const tokenData = await fetchAgoraToken();
 
@@ -442,7 +442,7 @@
 
     AgoraRTC.onAudioAutoplayFailed = () => {
       const btn = document.createElement("button");
-      btn.innerText = "🔊 คลิกเพื่อเปิดเสียง";
+      btn.innerText = "คลิกเพื่อเปิดเสียง";
       btn.className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 px-6 py-3 text-lg border-none rounded-full bg-red-600 text-white cursor-pointer shadow-lg hover:bg-red-700 transition-all";
 
       document.getElementById("local-player").appendChild(btn);
@@ -468,7 +468,7 @@
       userUid
     );
 
-    console.log("✅ Joined channel");
+    console.log("Joined channel");
 
     if (isHost) {
       const cameraId = await getSelectedCameraId();
@@ -476,13 +476,13 @@
       const devices = await AgoraRTC.getDevices();
       const microphones = devices.filter(d => d.kind === "audioinput");
 
-      console.log("🎤 Available microphones:", microphones.map(m => ({
+      console.log("Available microphones:", microphones.map(m => ({
         label: m.label,
         deviceId: m.deviceId
       })));
 
       if (!microphones.length) {
-        throw new Error("❌ ไม่พบไมโครโฟน กรุณาเช็คการเชื่อมต่อไมค์");
+        throw new Error("ไม่พบไมโครโฟน กรุณาเช็คการเชื่อมต่อไมค์");
       }
 
       const mic =
@@ -490,7 +490,7 @@
         microphones.find(m => m.label && m.label.includes("Realtek")) ||
         microphones[0];
 
-      console.log("🎤 Using microphone:", mic.label);
+      console.log("Using microphone:", mic.label);
 
       localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
         encoderConfig: {
@@ -510,7 +510,7 @@
         localTracks.videoTrack
       ]);
 
-      console.log("📡 Published tracks");
+      console.log("Published tracks");
 
       localTracks.videoTrack.play("local-player");
     }

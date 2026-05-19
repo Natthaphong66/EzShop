@@ -122,7 +122,7 @@ class AgoraTokenView(View):
             data = json.loads(request.body)
 
             channel_name = data.get('channel_name')
-            uid = data.get('uid')              # ✅ FIX ตรงนี้
+            uid = data.get('uid')             
             role = int(data.get('role', 1))    # 1 = publisher, 2 = subscriber
 
             if not channel_name:

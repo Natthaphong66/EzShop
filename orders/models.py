@@ -67,7 +67,6 @@ class Order(models.Model):
     shipping_carrier = models.CharField(max_length=100, blank=True, null=True, verbose_name='บริษัทขนส่ง')
     carrier_slug = models.CharField(max_length=50, blank=True, null=True, verbose_name='Carrier Slug', choices=CARRIER_CHOICES)
     shipped_at = models.DateTimeField(blank=True, null=True, verbose_name='วันที่จัดส่ง')
-    tracking_delivered_at = models.DateTimeField(blank=True, null=True, verbose_name='วันที่จัดส่งถึง (จาก webhook)')
     
     class Meta:
         ordering = ['-created_at']

@@ -265,3 +265,4 @@ class MyBidsView(LoginRequiredMixin, ListView):
             })
         
         return auctions_with_bid
+    

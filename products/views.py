@@ -108,8 +108,7 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = "products/product_form.html"
-    # success_url = '/products/' # ถ้าบันทึกสำเร็จแล้ว error ว่า No URL to redirect ให้เปิดบรรทัดนี้ครับ
-
+    
     def form_valid(self, form):
         form.instance.seller = self.request.user
         response = super().form_valid(form)
